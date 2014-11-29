@@ -8,7 +8,7 @@
 
 typedef void (*entry_t)(void);
 
-static entry_t _entries[PROC_ID_MAX + 1] = {
+static entry_t _entries[PROC_NUM_CHILD + 1] = {
 	NULL,
 	cmpl_enter,
 	exec_enter,

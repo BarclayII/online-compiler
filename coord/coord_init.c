@@ -2,7 +2,7 @@
 #include "coord.h"
 #include "proc.h"
 
-#define NUM_SOCKFD	((PROC_ID_MAX - PROC_ID_MIN + 1) * 2)
+#define NUM_SOCKFD	(PROC_NUM_CHILD * 2 + 2)
 
 static int _sockfd[NUM_SOCKFD + 2];
 
@@ -10,9 +10,9 @@ static int coord_create_sockets(void)
 {
 	int i;
 
-	for (i = PROC_ID_MIN; i <= PROC_ID_MAX; ++i) {
+	for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i) {
 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, _sockfd + i*2) == -1) {
-			coord_pinfo(PINFO_ERROR, TRUE, "socketpair");
+			pinfo(PINFO_ERROR, TRUE, "socketpair");
 			return -1;
 		}
 	}
@@ -25,9 +25,9 @@ static int coord_create_processes(void)
 	int i;
 	pid_t pid;
 
-	for (i = PROC_ID_MIN; i <= PROC_ID_MAX; ++i) {
+	for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i) {
 		if ((pid = fork()) == -1) {
-			coord_pinfo(PINFO_ERROR, TRUE, "fork");
+			pinfo(PINFO_ERROR, TRUE, "fork");
 			return -1;
 		} else if (pid == 0) {
 			coord_to_child(i);
@@ -37,7 +37,7 @@ static int coord_create_processes(void)
 			coord_pid_child[i] = pid;
 			coord_sockfd[i] = _sockfd[i * 2];
 			if (close(_sockfd[i * 2 + 1]) == -1)
-				coord_pinfo(PINFO_WARN, TRUE,
+				pinfo(PINFO_WARN, TRUE,
 				    "failed to close unused sockets");
 		}
 	}
@@ -56,6 +56,8 @@ int coord_init(void)
 	if (coord_create_processes() != 0)
 		/* terminate possibly-created children */
 		coord_term(1);
+
+	current_proc = PROC_COORD;
 
 	return 0;
 }

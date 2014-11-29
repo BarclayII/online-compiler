@@ -15,7 +15,7 @@ int coord_exit(int retval)
 int coord_kill(int signum, int retval)
 {
 	int i;
-	for (i = PROC_ID_MIN; i < PROC_ID_MAX; ++i) {
+	for (i = PROC_CHILD_MIN; i < PROC_CHILD_MAX; ++i) {
 		if (pid_child[i] > 0)
 			kill(pid_child[i], signum);
 	}
