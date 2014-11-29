@@ -3,7 +3,7 @@
 
 struct msghdr {
 	int sender;
-	int recver;
+	int receiver;
 	int info_level;
 	union {
 	} un;
