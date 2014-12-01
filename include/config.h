@@ -6,11 +6,15 @@
 #endif
 
 #ifndef UID_CMPL
-#define UID_CMPL    1000
+#define UID_CMPL	1000
 #endif
 
 #ifndef UID_SRVR
-#define UID_SRVR    1000
+#define UID_SRVR	1000
+#endif
+
+#ifndef SRVR_PORT
+#define SRVR_PORT	6700
 #endif
 
 #endif

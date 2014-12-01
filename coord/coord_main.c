@@ -34,10 +34,8 @@ void coord_monit_child(void)
 
 int coord_main(void)
 {
-	fd_set rd, wr, ex;
+	fd_set rd;
 	FD_ZERO(&rd);
-	FD_ZERO(&wr);
-	FD_ZERO(&ex);
 
 	int i;
 
@@ -48,13 +46,18 @@ int coord_main(void)
 		for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i)
 			FD_SET(coord_sockfd[i], &rd);
 
-		if (select(PROC_NUM, &rd, &wr, &ex, NULL) >= 0) {
-			for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i)
-				if (FD_ISSET(coord_sockfd[i], rd))
-					coord_handle(i);
-		} else {
-			pinfo(PINFO_ERROR, TRUE, "select");
-			coord_term(1);
+		while (select(PROC_NUM, &rd, NULL, NULL, NULL) < 0) {
+			switch (errno) {
+			case EINTR:
+				break;
+			default:
+				pinfo(PINFO_ERROR, TRUE, "select");
+				coord_term(1);
+				break;
+			}
 		}
+		for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i)
+			if (FD_ISSET(coord_sockfd[i], rd))
+				coord_handle(i);
 	}
 }

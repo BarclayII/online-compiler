@@ -1,8 +1,9 @@
 #include "srvr.h"
 #include "proc.h"
 #include "pinfo.h"
+#include "config.h"
 
-void srvr_init(void)
+void srvr_init_priv(void)
 {
 	if (chdir(ROOTDIR) == -1) {
 		pinfo(PINFO_ERROR, TRUE, "chdir(\"%s\") failed", SRVR_ROOT);
@@ -22,5 +23,9 @@ void srvr_enter(int fd)
 {
 	coord_fd = fd;
 
-	srvr_init();
+	/* initialize privilege e.g. setting up working directory and user id */
+	srvr_init_priv();
+
+	/* enter main routine */
+	srvr_main();
 }
