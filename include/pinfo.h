@@ -3,6 +3,8 @@
 
 #include <stdarg.h>
 
+#include "bool.h"
+
 void pinfo(int level, bool append, const char *fmt, ...);
 void vpinfo(int level, bool append, const char *fmt, va_list vp);
 
