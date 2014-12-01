@@ -30,7 +30,21 @@ static int coord_create_processes(void)
 			pinfo(PINFO_ERROR, TRUE, "fork");
 			return -1;
 		} else if (pid == 0) {
-			coord_to_child(i);
+			/* setup current process type */
+			current_proc = i;
+			/* close all sockets except the one for communication with
+			 * the coordinator */
+			int j;
+			for (j = PROC_CHILD_MIN; j <= PROC_CHILD_MAX; ++j) {
+				if (close(_sockfd[j * 2]) == -1)
+					pinfo(PINFO_WARN, TRUE,
+					    "failed to close unused sockets");
+				if ((j != i) && close(_sockfd[j * 2 + 1]) == -1)
+					pinfo(PINFO_WARN, TRUE,
+					    "failed to close unused sockets");
+			}
+			/* pass the file descriptor to children */
+			coord_to_child(i, _sockfd[i * 2 + 1]);
 			/* NOTREACHED */
 			break;
 		} else {

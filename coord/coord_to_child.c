@@ -6,7 +6,7 @@
 #include "exec.h"
 #include "srvr.h"
 
-typedef void (*entry_t)(void);
+typedef void (*entry_t)(int);
 
 static entry_t _entries[PROC_NUM_CHILD + 1] = {
 	NULL,
@@ -15,7 +15,7 @@ static entry_t _entries[PROC_NUM_CHILD + 1] = {
 	srvr_enter
 };
 
-int coord_to_child(int proc_type)
+int coord_to_child(int proc_type, int fd)
 {
-	_entries[proc_type]();
+	_entries[proc_type](fd);
 }
