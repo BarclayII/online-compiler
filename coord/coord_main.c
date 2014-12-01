@@ -37,16 +37,19 @@ int coord_main(void)
 	fd_set rd;
 	FD_ZERO(&rd);
 
-	int i;
+	int i, maxfd = 0;
 
 	while (1) {
 		/* stage 1: monitor if children processes are running */
 		coord_monit_child();
 		/* stage 2: read from children, should block */
-		for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i)
+		for (i = PROC_CHILD_MIN; i <= PROC_CHILD_MAX; ++i) {
 			FD_SET(coord_sockfd[i], &rd);
+			if (maxfd < coord_sockfd[i])
+				maxfd = coord_sockfd[i];
+		}
 
-		while (select(PROC_NUM, &rd, NULL, NULL, NULL) < 0) {
+		while (select(maxfd + 1, &rd, NULL, NULL, NULL) < 0) {
 			switch (errno) {
 			case EINTR:
 				break;
