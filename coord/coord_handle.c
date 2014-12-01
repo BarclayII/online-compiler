@@ -1,36 +1,23 @@
 #include "coord.h"
 #include "proc.h"
 #include "pinfo.h"
+#include "rw.h"
 #include <unistd.h>
 
 static void coord_handle_read(int fd, void *buf, size_t len)
 {
-	while (read(fd, buf, len) == -1)
-		switch (errno) {
-		case EINTR:
-			/* may need to do some additional work */
-		case EAGAIN:
-		case EWOULDBLOCK:
-			break;
-		default:
-			pinfo(PINFO_ERROR, TRUE, "read");
-			coord_term(1);
-		}
+	if (read_n(fd, buf, len) == -1) {
+		pinfo(PINFO_ERROR, TRUE, "read");
+		coord_term(1);
+	}
 }
 
 static void coord_handle_write(int fd, const void *buf, size_t len)
 {
-	while (write(fd, buf, len) == -1)
-		switch (errno) {
-		case EINTR:
-			/* may need to do some additional work */
-		case EAGAIN:
-		case EWOULDBLOCK:
-			break;
-		default:
-			pinfo(PINFO_ERROR, TRUE, "write");
-			coord_term(1);
-		}
+	if (write_n(fd, buf, len) == -1) {
+		pinfo(PINFO_ERROR, TRUE, "read");
+		coord_term(1);
+	}
 }
 
 int coord_handle(int proc_id)
