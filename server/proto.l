@@ -1,8 +1,7 @@
 %option noyywrap nodefault yylineno
 
 %{
-#include <stdio.h>
-#include <string.h>
+#include "srvr_local.h"
 
 int lines = 0, cur_line = 0;
 
@@ -80,21 +79,3 @@ NUMBER	([0-9]+)
 		BEGIN INITIAL;
 }
 %%
-
-char *srvr_mkdir(const char *user)
-{
-	/* dir = user.XXXXXX */
-	char *dir = (char *)calloc(strlen(user) + 8, sizeof(char));
-	strlcpy(dir, user);
-	strlcat(dir, ".XXXXXX");
-	if (mkdtemp(dir) == NULL)
-		return NULL;
-	if (chdir(dir) == -1) {
-		rmdir(dir);
-		return NULL;
-	}
-	if ((fp_dir_conf = fopen(".conf", "w")) == NULL) {
-		rmdir(dir);
-		return NULL;
-	}
-}
