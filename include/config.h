@@ -17,4 +17,16 @@
 #define SRVR_PORT	6700
 #endif
 
+#ifndef PATH_SEP
+#define PATH_SEP	"/"
+#endif
+
+#ifndef OUTEXEC_CONFIG
+#define OUTEXEC_CONFIG	".outexec"
+#endif
+
+#ifndef LDFLAGS_CONFIG
+#define LDFLAGS_CONFIG	".ldflags"
+#endif
+
 #endif
