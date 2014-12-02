@@ -9,11 +9,11 @@
  * Create a temporary directory according to user name
  * Returns name of the created directory
  */
-char *srvr_mkdir(const char *user)
+char *srvr_mkdir(const char *user, const char *dir, size_t size)
 {
 	char *dir = (char *)calloc(strlen(user) + 8);
-	strlcpy(dir, user);
-	strlcat(dir, ".XXXXXX");
+	strlcpy(dir, user, size);
+	strlcat(dir, ".XXXXXX", size);
 	
 	if (mkdtemp(dir) == NULL) {
 		pinfo(PINFO_WARN, TRUE, "mkdir for %s", user);
@@ -30,36 +30,37 @@ char *srvr_mkdir(const char *user)
  */
 int srvr_set_outexec(const char *dir, const char *outexec)
 {
-	if (chdir(dir) == -1) {
-		pinfo(PINFO_WARN, TRUE, "chdir to %s", dir);
+	/* dir/.outexec */
+	int path_len = strlen(dir) + strlen(OUTEXEC_CONFIG) + 1;
+	char *path = (char *)calloc(path_len + 1);
+	if (path == NULL) {
+		pinfo(PINFO_WARN, TRUE, "calloc");
 		return -1;
 	}
-	pinfo(PINFO_DEBUG, FALSE, "chdir to %s", dir);
+
+	strlcpy(path, dir, path_len + 1);
+	strlcat(path, OUTEXEC_CONFIG, path_len + 1);
 
 	FILE *fp;
-	if ((fp = fopen(OUTEXEC_CONFIG, "w")) == NULL) {
-		pinfo(PINFO_WARN, TRUE, "fopen %s", OUTEXEC_CONFIG);
+	if ((fp = fopen(path, "w")) == NULL) {
+		pinfo(PINFO_WARN, TRUE, "fopen %s", path);
 		return -1;
 	}
-	pinfo(PINFO_DEBUG, FALSE, "fopen %s", OUTEXEC_CONFIG);
+	pinfo(PINFO_DEBUG, FALSE, "fopen %s", path);
 
 	if (fprintf(fp, "%s\n", outexec) < 0) {
-		pinfo(PINFO_WARN, TRUE, "fprintf %s", OUTEXEC_CONFIG);
+		pinfo(PINFO_WARN, TRUE, "fprintf %s", path);
 		return -1;
 	}
-	pinfo(PINFO_DEBUG, FALSE, "fprintf %s %s", OUTEXEC_CONFIG, outexec);
+	pinfo(PINFO_DEBUG, FALSE, "fprintf %s %s", path, outexec);
 
 	if (fclose(fp) == EOF) {
-		pinfo(PINFO_WARN, TRUE, "fclose %s", OUTEXEC_CONFIG);
+		pinfo(PINFO_WARN, TRUE, "fclose %s", path);
 		return -1;
 	}
-	pinfo(PINFO_DEBUG, FALSE, "fclose %s", OUTEXEC_CONFIG);
+	pinfo(PINFO_DEBUG, FALSE, "fclose %s", path);
 
-	if (chdir("..") == -1) {
-		pinfo(PINFO_WARN, TRUE, "return to parent directory failed");
-		return -1;
-	}
-	pinfo(PINFO_DEBUG, FALSE, "return to parent directory");
+	free(path);
 
 	return 0;
 }
