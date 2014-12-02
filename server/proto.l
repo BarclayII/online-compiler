@@ -44,35 +44,31 @@ NUMBER	([0-9]+)
 	srvr_set_ldflags(tmpdir, ldflags = strtrim(strdup(yytext + 8)));
 }
 ^CSOURCE" "{CSOURCE}		{
-	cur_file = srvr_open_file(
+	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 8)),
-		"w");
+		filename = strtrim(strdup(yytext + 8)));
 	BEGIN CSOURCE;
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
 	srvr_set_cflags(tmpdir, filename, cflags = strtrim(strdup(yytext + 7)));
 }
 ^CHEADER" "{CHEADER}		{
-	cur_file = srvr_open_file(tmpdir,
-		filename = strtrim(strdup(yytext + 8)),
-		"w");
+	cur_file = srvr_create_file(tmpdir,
+		filename = strtrim(strdup(yytext + 8)));
 }
 ^LEX" "{LEX}			{
-	cur_file = srvr_open_file(
+	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 4)),
-		"w");
+		filename = strtrim(strdup(yytext + 4)));
 	BEGIN LEX;
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
 	srvr_set_lexout(tmpdir, filename, conf = strtrim(strdup(yytext + 7)));
 }
 ^YACC" "{YACC}			{
-	cur_file = srvr_open_file(
+	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 5)),
-		"w");
+		filename = strtrim(strdup(yytext + 5)));
 	BEGIN YACC;
 }
 <YACC>^YACCOUT" "{CSOURCE}	{

@@ -9,7 +9,8 @@
  * Create a temporary directory according to user name
  * Returns name of the created directory
  */
-char *srvr_mkdir(const char *user, const char *dir, size_t size)
+char *
+srvr_mkdir(const char *user, const char *dir, size_t size)
 {
 	char *dir = (char *)calloc(strlen(user) + 8);
 	strlcpy(dir, user, size);
@@ -28,19 +29,10 @@ char *srvr_mkdir(const char *user, const char *dir, size_t size)
  * Create a configuration file under the specified directory for different
  * specifications
  */
-static int srvr_set_config(const char *dir, const char *file, const char *content)
+static int
+srvr_set_config(const char *dir, const char *file, const char *content)
 {
-	/* dir/.outexec */
-	int path_len = strlen(dir) + strlen(file) + 1;
-	char *path = (char *)calloc(path_len + 1);
-	if (path == NULL) {
-		pinfo(PINFO_WARN, TRUE, "calloc");
-		return -1;
-	}
-
-	strlcpy(path, dir, path_len + 1);
-	strlcat(path, PATH_SEP, path_len + 1);
-	strlcat(path, file, path_len + 1);
+	char *path = build_path(file, dir);
 
 	FILE *fp;
 	if ((fp = fopen(path, "w")) == NULL) {
@@ -69,12 +61,21 @@ static int srvr_set_config(const char *dir, const char *file, const char *conten
 /*
  * Create OUTEXEC and LDFLAGS config files
  */
-int srvr_set_outexec(const char *dir, const char *outexec)
+int
+srvr_set_outexec(const char *dir, const char *outexec)
 {
 	return srvr_set_config(dir, OUTEXEC_CONFIG, outexec);
 }
 
-int srvr_set_ldflags(const char *dir, const char *ldflags)
+int
+srvr_set_ldflags(const char *dir, const char *ldflags)
 {
 	return srvr_set_config(dir, LDFLAGS_CONFIG, ldflags);
+}
+
+FILE *
+srvr_create_file(const char *dir, const char *file, const char *mode)
+{
+	FILE *fp;
+	/* check if the file already exists */
 }
