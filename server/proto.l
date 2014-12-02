@@ -2,6 +2,8 @@
 
 %{
 #include "srvr_local.h"
+#include <string.h>
+#include "strl.h"
 
 int lines = 0, cur_line = 0;
 
@@ -33,37 +35,48 @@ NUMBER	([0-9]+)
 
 %%
 ^USER" "{NAME}			{
-	tmpdir = srvr_mkdir(user = strdup(yytext + 5));
+	tmpdir = srvr_mkdir(user = strtrim(strdup(yytext + 5)));
 }
 ^OUTEXEC" "{NAME}		{
-	srvr_set_outexec(tmpdir, outexec = strdup(yytext + 8);
+	srvr_set_outexec(tmpdir, outexec = strtrim(strdup(yytext + 8)));
 }
 ^LDFLAGS" "{TEXT}		{
-	srvr_set_ldflags(tmpdir, ldflags = strdup(yytext + 8));
+	srvr_set_ldflags(tmpdir, ldflags = strtrim(strdup(yytext + 8)));
 }
 ^CSOURCE" "{CSOURCE}		{
-	cur_file = srvr_open_file(tmpdir, filename = strdup(yytext + 8), "w");
+	cur_file = srvr_open_file(
+		tmpdir,
+		filename = strtrim(strdup(yytext + 8)),
+		"w");
 	BEGIN CSOURCE;
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
-	srvr_set_cflags(tmpdir, filename, cflags = strdup(yytext + 7));
+	srvr_set_cflags(tmpdir, filename, cflags = strtrim(strdup(yytext + 7)));
 }
 ^CHEADER" "{CHEADER}		{
-	cur_file = srvr_open_file(tmpdir, filename = strdup(yytext + 8), "w");
+	cur_file = srvr_open_file(tmpdir,
+		filename = strtrim(strdup(yytext + 8)),
+		"w");
 }
 ^LEX" "{LEX}			{
-	cur_file = srvr_open_file(tmpdir, filename = strdup(yytext + 4), "w");
+	cur_file = srvr_open_file(
+		tmpdir,
+		filename = strtrim(strdup(yytext + 4)),
+		"w");
 	BEGIN LEX;
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
-	srvr_set_lexout(tmpdir, filename, conf = strdup(yytext + 7));
+	srvr_set_lexout(tmpdir, filename, conf = strtrim(strdup(yytext + 7)));
 }
 ^YACC" "{YACC}			{
-	cur_file = srvr_open_file(tmpdir, filename = strdup(yytext + 5), "w");
+	cur_file = srvr_open_file(
+		tmpdir,
+		filename = strtrim(strdup(yytext + 5)),
+		"w");
 	BEGIN YACC;
 }
 <YACC>^YACCOUT" "{CSOURCE}	{
-	srvr_set_yaccout(tmpdir, filename, conf = strdup(yytext + 8));
+	srvr_set_yaccout(tmpdir, filename, conf = strtrim(strdup(yytext + 8)));
 }
 <CSOURCE,LEX,YACC>^TEXTLINES" "{NUMBER}	{
 	lines = atoi(yytext + 10);

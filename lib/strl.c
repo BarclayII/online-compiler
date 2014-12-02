@@ -89,13 +89,20 @@ strrtrim(char *str)
 	return s;
 }
 
+#define __WHITESPACE " \t\n\v\f\r"
 char *
 strltrim(char *str)
 {
 	char *s = str;
-	size_t lw = strspn(s, WHITESPACE);
+	size_t lw = strspn(s, __WHITESPACE);
 	size_t len = strlen(s);
 	memmove(s, s + lw, len + 1 - lw);
 	return s;
 }
+#undef __WHITESPACE
 
+char *
+strtrim(char *str)
+{
+	return strltrim(strrtrim(str));
+}
