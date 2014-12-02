@@ -1,6 +1,8 @@
-#ifndef LIBBSD
-
+#include <string.h>
+#include <ctype.h>
 #include "strl.h"
+
+#ifndef LIBBSD
 
 /*
  * strlcpy() and strlcat() are borrowed from OpenBSD source code.
@@ -73,3 +75,27 @@ strlcat(char *dst, const char *src, size_t siz)
 }
 
 #endif
+
+char *
+strrtrim(char *str)
+{
+	char *s = str;
+	size_t n = strlen(s);
+	size_t i;
+	
+	for (i = n - 1; (i >= 0) && isspace(s[i]); s[i--] = '\0')
+		/* nothing */;
+	
+	return s;
+}
+
+char *
+strltrim(char *str)
+{
+	char *s = str;
+	size_t lw = strspn(s, WHITESPACE);
+	size_t len = strlen(s);
+	memmove(s, s + lw, len + 1 - lw);
+	return s;
+}
+

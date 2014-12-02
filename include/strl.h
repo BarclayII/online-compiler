@@ -6,4 +6,7 @@ char *strlcpy(char *, const char *, size_t);
 char *strlcat(char *, const char *, size_t);
 #endif
 
+char *strrtrim(char *);
+char *strltrim(char *);
+
 #endif
