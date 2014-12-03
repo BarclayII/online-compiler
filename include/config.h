@@ -22,11 +22,11 @@
 #endif
 
 #ifndef OUTEXEC_CONFIG
-#define OUTEXEC_CONFIG	".outexec"
+#define OUTEXEC_CONFIG	".outexec$"
 #endif
 
 #ifndef LDFLAGS_CONFIG
-#define LDFLAGS_CONFIG	".ldflags"
+#define LDFLAGS_CONFIG	".ldflags$"
 #endif
 
 #ifndef DFL_UMASK
@@ -35,6 +35,18 @@
 
 #ifndef DFL_UMASK_DIR
 #define DFL_UMASK_DIR	0755
+#endif
+
+#ifndef CFLAGS_CONFIG
+#define CFLAGS_CONFIG	".cflags$"
+#endif
+
+#ifndef LEXOUT_CONFIG
+#define LEXOUT_CONFIG	".lexout$"
+#endif
+
+#ifndef YACCOUT_CONFIG
+#define YACCOUT_CONFIG	".yaccout$"
 #endif
 
 #endif

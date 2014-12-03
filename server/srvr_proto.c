@@ -93,10 +93,18 @@ srvr_create_file(const char *dir, const char *file)
 		case EEXIST:
 			pinfo(PINFO_WARN, FALSE,
 			    "file %s requested already exists", path);
-			srvr_reply(SR_EXIST, file);
+			break;
+		case EISDIR:
+			pinfo(PINFO_WARN, FALSE,
+			    "file %s is actually a directory", path);
 			break;
 		default:
 			break;
 		}
 	}
+}
+
+int
+srvr_set_cflags(const char *dir, const char *file, const char *cflags)
+{
 }

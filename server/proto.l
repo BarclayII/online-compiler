@@ -14,6 +14,8 @@ char *outexec = NULL;
 char *ldflags = NULL;
 char *filename = NULL;
 char *conf = NULL;
+
+extern int sockfd;
 %}
 
 %x CSOURCE
@@ -24,11 +26,11 @@ char *conf = NULL;
 
 NAME	([a-zA-Z0-9_\-\.]+)
 PATH	([a-zA-Z0-9_\-\.]+)(\/[a-zA-Z0-9_\-\.]+)
-CSOURCE	({NAME}\.c)
-CHEADER	({NAME}\.h)
-LEX	({NAME}\.l)
-YACC	({NAME}\.y)
-COBJ	({NAME}\.o)
+CSOURCE	({PATH}\.c)
+CHEADER	({PATH}\.h)
+LEX	({PATH}\.l)
+YACC	({PATH}\.y)
+COBJ	({PATH}\.o)
 TEXT	([ -~]*)
 LINE	([ -~\t\r]*)
 NUMBER	([0-9]+)
@@ -36,43 +38,70 @@ NUMBER	([0-9]+)
 %%
 ^USER" "{NAME}			{
 	tmpdir = srvr_mkdir(user = strtrim(strdup(yytext + 5)));
+	if (tmpdir == NULL) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+	}
 }
 ^OUTEXEC" "{NAME}		{
-	srvr_set_outexec(tmpdir, outexec = strtrim(strdup(yytext + 8)));
+	if (srvr_set_outexec(tmpdir, outexec = strtrim(strdup(yytext + 8))) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+
+	}
 }
 ^LDFLAGS" "{TEXT}		{
-	srvr_set_ldflags(tmpdir, ldflags = strtrim(strdup(yytext + 8)));
+	if (srvr_set_ldflags(tmpdir, ldflags = strtrim(strdup(yytext + 8))) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+	}
 }
 ^CSOURCE" "{CSOURCE}		{
 	cur_file = srvr_create_file(
 		tmpdir,
 		filename = strtrim(strdup(yytext + 8)));
+	srvr_create_report_error();
 	BEGIN CSOURCE;
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
-	srvr_set_cflags(tmpdir, filename, cflags = strtrim(strdup(yytext + 7)));
+	if (srvr_set_cflags(tmpdir, filename, 
+	    cflags = strtrim(strdup(yytext + 7))) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+	}
 }
 ^CHEADER" "{CHEADER}		{
 	cur_file = srvr_create_file(tmpdir,
 		filename = strtrim(strdup(yytext + 8)));
+	srvr_create_report_error();
 }
 ^LEX" "{LEX}			{
 	cur_file = srvr_create_file(
 		tmpdir,
 		filename = strtrim(strdup(yytext + 4)));
+	srvr_create_report_error();
 	BEGIN LEX;
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
-	srvr_set_lexout(tmpdir, filename, conf = strtrim(strdup(yytext + 7)));
+	if (srvr_set_lexout(tmpdir, filename, 
+	    conf = strtrim(strdup(yytext + 7))) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+	}
 }
 ^YACC" "{YACC}			{
 	cur_file = srvr_create_file(
 		tmpdir,
 		filename = strtrim(strdup(yytext + 5)));
+	srvr_create_report_error();
 	BEGIN YACC;
 }
 <YACC>^YACCOUT" "{CSOURCE}	{
-	srvr_set_yaccout(tmpdir, filename, conf = strtrim(strdup(yytext + 8)));
+	if (srvr_set_yaccout(tmpdir, filename, 
+	    conf = strtrim(strdup(yytext + 8))) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		yyterminate();
+	}
 }
 <CSOURCE,LEX,YACC>^TEXTLINES" "{NUMBER}	{
 	lines = atoi(yytext + 10);
@@ -87,4 +116,26 @@ NUMBER	([0-9]+)
 	if (++cur_line == lines)
 		BEGIN INITIAL;
 }
+.	{
+	srvr_reply(SR_ERROR_BAD_REQUEST);
+	yyterminate();
+}
 %%
+
+void srvr_create_report_error(void)
+{
+	if (cur_file == NULL) {
+		switch (errno) {
+		case EEXIST:
+			srvr_reply(SR_ERROR_DUP_FNAME);
+			break;
+		case EISDIR:
+			srvr_reply(SR_ERROR_DIR_EXIST);
+			break;
+		default:
+			srvr_reply(SR_ERROR_INTERN);
+			break;
+		}
+		yyterminate();
+	}
+}
