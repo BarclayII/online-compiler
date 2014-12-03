@@ -33,4 +33,8 @@
 #define DFL_UMASK	0644
 #endif
 
+#ifndef DFL_UMASK_DIR
+#define DFL_UMASK_DIR	0755
+#endif
+
 #endif

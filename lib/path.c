@@ -14,7 +14,7 @@ build_path(const char *file, const char *dir)
 	char *path = (char *)calloc(path_len + 1);
 	if (path == NULL) {
 		pinfo(PINFO_WARN, TRUE, "calloc");
-		return -1;
+		return NULL;
 	}
 
 	strlcpy(path, dir, path_len + 1);
@@ -37,6 +37,10 @@ build_multi_level_path(const char *file, int num_level, ...)
 		lq = strlen(q);
 		len += lq + ls;
 		p = realloc(p, len + 1);
+		if (p == NULL) {
+			pinfo(PINFO_WARN, TRUE, "realloc");
+			return NULL;
+		}
 		memmove(p + lq + ls, p, len - lq - ls + 1);
 		memcpy(p, q, lq);
 		memcpy(p + lq, PATH_SEP, ls);
@@ -47,19 +51,58 @@ build_multi_level_path(const char *file, int num_level, ...)
 
 #define O_PERM_CREAT	(O_RDWR | O_CREAT | O_TRUNC | O_EXCL)
 
+/*
+ * creat() equivalent for FILE streams
+ * creates directory if needed.
+ */
 FILE *
 fcreat(const char *path, const char *mode)
 {
 	int fd;
 	FILE *fp;
-	
-	if ((fd = open(path, O_PERM_CREAT, DFL_UMASK)) == -1) {
-		pinfo(PINFO_WARN, TRUE, "open %s", path);
+
+	int cdir_fd;
+	if ((cdir_fd = open(".", O_RDWR | O_DIRECTORY)) == -1) {
+		pinfo(PINFO_DEBUG, TRUE, "open current directory failed");
 		return NULL;
 	}
 
+	char *p = strdup(path);
+	char *d;
+
+	for (d = strtok(p, PATH_SEP); d != NULL; d = strtok(NULL, PATH_SEP)) {
+		if ((chdir(d) == -1) && (errno == ENOENT)) {
+			if (mkdir(d, DFL_UMASK_DIR) == -1) {
+				pinfo(PINFO_DEBUG, TRUE, "mkdir %s", d);
+				return NULL;
+			}
+			if (chdir(d) == -1) {
+				pinfo(PINFO_DEBUG, TRUE, "chdir %s after mkdir",
+				    d);
+				return NULL;
+			}
+		} else {
+			pinfo(PINFO_DEBUG, TRUE, "chdir %s", d);
+			return NULL;
+		}
+	}
+
+	if (fchdir(cdir_fd) == -1) {
+		pinfo(PINFO_DEBUG, TRUE, "change to current directory failed");
+		return NULL;
+	}
+
+	if ((fd = open(path, O_PERM_CREAT, DFL_UMASK)) == -1) {
+		if (errno != ENOENT) {
+			pinfo(PINFO_DEBUG, TRUE, "open %s", path);
+			return NULL;
+		}
+	}
+
 	if ((fp = fdopen(fd, mode)) == NULL)
-		pinfo(PINFO_WARN, TRUE, "fdopen %s", path);
+		pinfo(PINFO_DEBUG, TRUE, "fdopen %s", path);
 
 	return fp;
 }
+
+#undef O_PERM_CREAT

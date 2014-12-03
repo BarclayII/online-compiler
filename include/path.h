@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define PATH_SEP	"/"
-
 char *build_path(const char *, const char *);
 char *build_multi_level_path(const char *, int, ...);
 

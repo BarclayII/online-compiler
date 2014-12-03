@@ -33,6 +33,10 @@ static int
 srvr_set_config(const char *dir, const char *file, const char *content)
 {
 	char *path = build_path(file, dir);
+	if (path == NULL) {
+		pinfo(PINFO_ERROR, FALSE, "unable to build pathspec");
+		return -1;
+	}
 
 	FILE *fp;
 	if ((fp = fopen(path, "w")) == NULL) {
@@ -74,8 +78,25 @@ srvr_set_ldflags(const char *dir, const char *ldflags)
 }
 
 FILE *
-srvr_create_file(const char *dir, const char *file, const char *mode)
+srvr_create_file(const char *dir, const char *file)
 {
 	FILE *fp;
+	char *path = build_path(file, dir);
+	if (path == NULL) {
+		pinfo(PINFO_ERROR, FALSE, "unable to build pathspec");
+		return NULL;
+	}
+
 	/* check if the file already exists */
+	if ((fp = fcreat(path, "w")) == NULL) {
+		switch (errno) {
+		case EEXIST:
+			pinfo(PINFO_WARN, FALSE,
+			    "file %s requested already exists", path);
+			srvr_reply(SR_EXIST, file);
+			break;
+		default:
+			break;
+		}
+	}
 }
