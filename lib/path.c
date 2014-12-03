@@ -44,3 +44,22 @@ build_multi_level_path(const char *file, int num_level, ...)
 	va_end(ap);
 	return p;
 }
+
+#define O_PERM_CREAT	(O_RDWR | O_CREAT | O_TRUNC | O_EXCL)
+
+FILE *
+fcreat(const char *path, const char *mode)
+{
+	int fd;
+	FILE *fp;
+	
+	if ((fd = open(path, O_PERM_CREAT, DFL_UMASK)) == -1) {
+		pinfo(PINFO_WARN, TRUE, "open %s", path);
+		return NULL;
+	}
+
+	if ((fp = fdopen(fd, mode)) == NULL)
+		pinfo(PINFO_WARN, TRUE, "fdopen %s", path);
+
+	return fp;
+}

@@ -29,4 +29,8 @@
 #define LDFLAGS_CONFIG	".ldflags"
 #endif
 
+#ifndef DFL_UMASK
+#define DFL_UMASK	0644
+#endif
+
 #endif
