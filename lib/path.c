@@ -67,24 +67,27 @@ fcreat(const char *path, const char *mode)
 		return NULL;
 	}
 
-	char *p = strdup(path);
+	char *p = strdup(path), *p_end = p + strlen(p);
 	char *d;
 
-	for (d = strtok(p, PATH_SEP); d != NULL; d = strtok(NULL, PATH_SEP)) {
-		if ((chdir(d) == -1) && (errno == ENOENT)) {
-			if (mkdir(d, DFL_UMASK_DIR) == -1) {
-				pinfo(PINFO_DEBUG, TRUE, "mkdir %s", d);
+	for (d = strtok(p, PATH_SEP);
+	    (d != NULL) && (d + strlen(d) != p_end);
+	    d = strtok(NULL, PATH_SEP)) {
+		if (chdir(d) == -1)
+			if (errno == ENOENT) {
+				if (mkdir(d, DFL_UMASK_DIR) == -1) {
+					pinfo(PINFO_DEBUG, TRUE, "mkdir %s", d);
+					return NULL;
+				}
+				if (chdir(d) == -1) {
+					pinfo(PINFO_DEBUG, TRUE,
+					    "chdir %s after mkdir", d);
+					return NULL;
+				}
+			} else {
+				pinfo(PINFO_DEBUG, TRUE, "chdir %s", d);
 				return NULL;
 			}
-			if (chdir(d) == -1) {
-				pinfo(PINFO_DEBUG, TRUE, "chdir %s after mkdir",
-				    d);
-				return NULL;
-			}
-		} else {
-			pinfo(PINFO_DEBUG, TRUE, "chdir %s", d);
-			return NULL;
-		}
 	}
 
 	if (fchdir(cdir_fd) == -1) {
@@ -101,6 +104,9 @@ fcreat(const char *path, const char *mode)
 
 	if ((fp = fdopen(fd, mode)) == NULL)
 		pinfo(PINFO_DEBUG, TRUE, "fdopen %s", path);
+
+	if (close(cdir_fd) == -1)
+		pinfo(PINFO_DEBUG, TRUE, "close current directory failed");
 
 	return fp;
 }
