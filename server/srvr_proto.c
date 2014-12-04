@@ -143,3 +143,26 @@ srvr_set_file_config(const char *dir, const char *file, const char *suffix,
 
 	return 0;
 }
+
+int
+srvr_set_cflags(const char *dir, const char *file, const char *cflags)
+{
+	return srvr_set_file_config(dir, file, CFLAGS_CONFIG, cflags);
+}
+
+int
+srvr_set_lexout(const char *dir, const char *file, const char *lexout)
+{
+	return srvr_set_file_config(dir, file, LEXOUT_CONFIG, lexout);
+}
+
+int
+srvr_set_yaccout(const char *dir, const char *file, const char *yaccout)
+{
+	return srvr_set_file_config(dir, file, YACCOUT_CONFIG, yaccout);
+}
+
+int
+srvr_puts(const FILE *fp, const char *line)
+{
+}

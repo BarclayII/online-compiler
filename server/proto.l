@@ -9,11 +9,10 @@ int lines = 0, cur_line = 0;
 
 FILE *fp_source = NULL, *fp_source_conf = NULL, *fp_dir_conf = NULL;
 
-char *user = NULL, *tmpdir = NULL;
-char *outexec = NULL;
-char *ldflags = NULL;
+char *tmpdir = NULL;
 char *filename = NULL;
-char *conf = NULL;
+
+char *tmptxt = NULL;
 
 extern int sockfd;
 %}
@@ -37,24 +36,26 @@ NUMBER	([0-9]+)
 
 %%
 ^USER" "{NAME}			{
-	tmpdir = srvr_mkdir(user = strtrim(strdup(yytext + 5)));
+	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yytext + 5)));
 	if (tmpdir == NULL) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
 	}
+	free_n(&tmptxt);
 }
 ^OUTEXEC" "{NAME}		{
-	if (srvr_set_outexec(tmpdir, outexec = strtrim(strdup(yytext + 8))) == -1) {
+	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
-
 	}
+	free_n(&tmptxt);
 }
 ^LDFLAGS" "{TEXT}		{
-	if (srvr_set_ldflags(tmpdir, ldflags = strtrim(strdup(yytext + 8))) == -1) {
+	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
 	}
+	free_n(&tmptxt);
 }
 ^CSOURCE" "{CSOURCE}		{
 	cur_file = srvr_create_file(
@@ -65,15 +66,17 @@ NUMBER	([0-9]+)
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
 	if (srvr_set_cflags(tmpdir, filename, 
-	    cflags = strtrim(strdup(yytext + 7))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
 	}
+	free_n(&tmptxt);
 }
 ^CHEADER" "{CHEADER}		{
 	cur_file = srvr_create_file(tmpdir,
 		filename = strtrim(strdup(yytext + 8)));
 	srvr_create_report_error();
+	BEGIN CSOURCE;
 }
 ^LEX" "{LEX}			{
 	cur_file = srvr_create_file(
@@ -84,10 +87,11 @@ NUMBER	([0-9]+)
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
 	if (srvr_set_lexout(tmpdir, filename, 
-	    conf = strtrim(strdup(yytext + 7))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
 	}
+	free_n(&tmptxt);
 }
 ^YACC" "{YACC}			{
 	cur_file = srvr_create_file(
@@ -98,10 +102,11 @@ NUMBER	([0-9]+)
 }
 <YACC>^YACCOUT" "{CSOURCE}	{
 	if (srvr_set_yaccout(tmpdir, filename, 
-	    conf = strtrim(strdup(yytext + 8))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
 		yyterminate();
 	}
+	free_n(&tmptxt);
 }
 <CSOURCE,LEX,YACC>^TEXTLINES" "{NUMBER}	{
 	lines = atoi(yytext + 10);
@@ -112,7 +117,7 @@ NUMBER	([0-9]+)
 		BEGIN INITIAL;
 }
 <TEXT>{LINE}			{
-	srvr_puts(cur_file, yytext);
+	srvr_puts(cur_file, strtrim(yytext));
 	if (++cur_line == lines)
 		BEGIN INITIAL;
 }
