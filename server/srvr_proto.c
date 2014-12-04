@@ -102,9 +102,44 @@ srvr_create_file(const char *dir, const char *file)
 			break;
 		}
 	}
+
+	free_n(&path);
+
+	return fp;
 }
 
 int
-srvr_set_cflags(const char *dir, const char *file, const char *cflags)
+srvr_set_file_config(const char *dir, const char *file, const char *suffix,
+    const char *content)
 {
+	int lf = strlen(file), lc = strlen(suffix);
+	char *cflags_fname = (char *)calloc(sizeof(char), lf + lc + 1);
+	memcpy(cflags_fname, file, lf + 1);
+	memcpy(cflags_fname + lf, suffix, lc + 1);
+	char *path = build_path(cflags_fname, dir);
+	if (path == NULL) {
+		pinfo(PINFO_ERROR, FALSE, "unable to build pathspec");
+		return -1;
+	}
+
+	FILE *fp;
+	if ((fp = fcreat(path, "w")) == NULL) {
+		pinfo(PINFO_WARN, TRUE, "create %s failed", path);
+		return -1;
+	}
+
+	if (fprintf(fp, "%s\n", content) < 0) {
+		pinfo(PINFO_WARN, TRUE, "output content to %s failed", path);
+		return -1;
+	}
+
+	if (fclose(fp) == EOF) {
+		pinfo(PINFO_WARN, TRUE, "fclose %s", path);
+		return -1;
+	}
+
+	free_n(&cflags_fname);
+	free_n(&path);
+
+	return 0;
 }
