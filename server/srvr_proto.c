@@ -10,9 +10,10 @@
  * Returns name of the created directory
  */
 char *
-srvr_mkdir(const char *user, const char *dir, size_t size)
+srvr_mkdir(const char *user)
 {
-	char *dir = (char *)calloc(strlen(user) + 8);
+	int size = strlen(user) + 8;
+	char *dir = (char *)calloc(size);
 	strlcpy(dir, user, size);
 	strlcat(dir, ".XXXXXX", size);
 	
