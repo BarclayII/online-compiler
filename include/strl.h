@@ -8,5 +8,6 @@ char *strlcat(char *, const char *, size_t);
 
 char *strrtrim(char *);
 char *strltrim(char *);
+char *strtrim(char *);
 
 #endif

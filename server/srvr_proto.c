@@ -165,4 +165,9 @@ srvr_set_yaccout(const char *dir, const char *file, const char *yaccout)
 int
 srvr_puts(const FILE *fp, const char *line)
 {
+	if (fputs(line, fp) == EOF) {
+		pinfo(PINFO_WARN, TRUE, "fputs");
+		return -1;
+	}
+	return 0;
 }

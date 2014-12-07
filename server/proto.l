@@ -39,21 +39,21 @@ NUMBER	([0-9]+)
 	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yytext + 5)));
 	if (tmpdir == NULL) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
 ^OUTEXEC" "{NAME}		{
 	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
 ^LDFLAGS" "{TEXT}		{
 	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
@@ -68,7 +68,7 @@ NUMBER	([0-9]+)
 	if (srvr_set_cflags(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
@@ -89,7 +89,7 @@ NUMBER	([0-9]+)
 	if (srvr_set_lexout(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
@@ -104,7 +104,7 @@ NUMBER	([0-9]+)
 	if (srvr_set_yaccout(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(SR_ERROR_INTERN);
-		yyterminate();
+		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
@@ -113,17 +113,34 @@ NUMBER	([0-9]+)
 	cur_line = 0;
 	if (lines > 0)
 		BEGIN TEXT;
-	else
+	else {
+		if (fclose(cur_file) == EOF) {
+			pinfo(PINFO_WARN, TRUE, "fclose");
+		}
+		free_n(&filename);
 		BEGIN INITIAL;
+	}
 }
 <TEXT>{LINE}			{
-	srvr_puts(cur_file, strtrim(yytext));
-	if (++cur_line == lines)
+	if (srvr_puts(cur_file, yytext) == -1) {
+		srvr_reply(SR_ERROR_INTERN);
+		srvr_yyfinish();
+	}
+	free_n(&tmptxt);
+	if (++cur_line == lines) {
+		if (fclose(cur_file) == EOF) {
+			pinfo(PINFO_WARN, TRUE, "fclose");
+		}
+		free_n(&filename);
 		BEGIN INITIAL;
+	}
 }
 .	{
 	srvr_reply(SR_ERROR_BAD_REQUEST);
-	yyterminate();
+	srvr_yyfinish();
+}
+<<EOF>>				{
+	srvr_yyfinish();
 }
 %%
 
@@ -141,6 +158,14 @@ void srvr_create_report_error(void)
 			srvr_reply(SR_ERROR_INTERN);
 			break;
 		}
-		yyterminate();
+		srvr_yyfinish();
 	}
+}
+
+void srvr_yyfinish(void)
+{
+	free_n(&tmpdir);
+	free_n(&tmptxt);
+	free_n(&filename);
+	yyterminate();
 }
