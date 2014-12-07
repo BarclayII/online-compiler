@@ -14,7 +14,7 @@ char *filename = NULL;
 
 char *tmptxt = NULL;
 
-#define YY_DECL		int yylex(int sockfd)
+#define YY_DECL		int yylex(int sockfd, yyscan_t yyscanner)
 
 %}
 
@@ -41,6 +41,7 @@ NUMBER	([0-9]+)
 	if (tmpdir == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -48,6 +49,7 @@ NUMBER	([0-9]+)
 	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -55,6 +57,7 @@ NUMBER	([0-9]+)
 	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -70,6 +73,7 @@ NUMBER	([0-9]+)
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -91,6 +95,7 @@ NUMBER	([0-9]+)
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -106,6 +111,7 @@ NUMBER	([0-9]+)
 	    tmptxt = strtrim(strdup(yytext + 8))) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 }
@@ -126,6 +132,7 @@ NUMBER	([0-9]+)
 	if (srvr_puts(cur_file, yytext) == -1) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
+		return -1;
 	}
 	free_n(&tmptxt);
 	if (++cur_line == lines) {
@@ -136,12 +143,19 @@ NUMBER	([0-9]+)
 		BEGIN INITIAL;
 	}
 }
+END	{
+	srvr_yyfinish();
+	return 0;
+}
 .	{
 	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
+	return -1;
 }
-<<EOF>>				{
+<<EOF>> {
+	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
+	return -1;
 }
 %%
 
@@ -158,6 +172,7 @@ void srvr_create_report_error(void)
 			break;
 		}
 		srvr_yyfinish();
+		return -1;
 	}
 }
 
@@ -166,5 +181,4 @@ void srvr_yyfinish(void)
 	free_n(&tmpdir);
 	free_n(&tmptxt);
 	free_n(&filename);
-	yyterminate();
 }
