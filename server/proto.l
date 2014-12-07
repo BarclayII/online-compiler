@@ -1,4 +1,4 @@
-%option noyywrap nodefault yylineno
+%option noyywrap nodefault yylineno reentrant
 
 %{
 #include "srvr_local.h"
@@ -14,7 +14,8 @@ char *filename = NULL;
 
 char *tmptxt = NULL;
 
-extern int sockfd;
+#define YY_DECL		int yylex(int sockfd)
+
 %}
 
 %x CSOURCE
@@ -38,21 +39,21 @@ NUMBER	([0-9]+)
 ^USER" "{NAME}			{
 	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yytext + 5)));
 	if (tmpdir == NULL) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
 ^OUTEXEC" "{NAME}		{
 	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
 }
 ^LDFLAGS" "{TEXT}		{
 	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
@@ -67,7 +68,7 @@ NUMBER	([0-9]+)
 <CSOURCE>^CFLAGS" "{TEXT}	{
 	if (srvr_set_cflags(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
@@ -88,7 +89,7 @@ NUMBER	([0-9]+)
 <LEX>^LEXOUT" "{CSOURCE}		{
 	if (srvr_set_lexout(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
@@ -103,7 +104,7 @@ NUMBER	([0-9]+)
 <YACC>^YACCOUT" "{CSOURCE}	{
 	if (srvr_set_yaccout(tmpdir, filename, 
 	    tmptxt = strtrim(strdup(yytext + 8))) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
@@ -123,7 +124,7 @@ NUMBER	([0-9]+)
 }
 <TEXT>{LINE}			{
 	if (srvr_puts(cur_file, yytext) == -1) {
-		srvr_reply(SR_ERROR_INTERN);
+		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
 	}
 	free_n(&tmptxt);
@@ -136,7 +137,7 @@ NUMBER	([0-9]+)
 	}
 }
 .	{
-	srvr_reply(SR_ERROR_BAD_REQUEST);
+	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
 }
 <<EOF>>				{
@@ -149,13 +150,11 @@ void srvr_create_report_error(void)
 	if (cur_file == NULL) {
 		switch (errno) {
 		case EEXIST:
-			srvr_reply(SR_ERROR_DUP_FNAME);
-			break;
 		case EISDIR:
-			srvr_reply(SR_ERROR_DIR_EXIST);
+			srvr_reply(sockfd, SR_ERROR_DUPNAME);
 			break;
 		default:
-			srvr_reply(SR_ERROR_INTERN);
+			srvr_reply(sockfd, SR_ERROR_INTERN);
 			break;
 		}
 		srvr_yyfinish();
