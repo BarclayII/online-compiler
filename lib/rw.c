@@ -4,7 +4,7 @@
 /*
  * A more robust unbuffered read/write routine
  */
-int read_n(int fd, void *buf, size_t len)
+ssize_t read_n(int fd, void *buf, size_t len)
 {
 	void *curp = buf;
 	size_t remain;
@@ -31,10 +31,10 @@ int read_n(int fd, void *buf, size_t len)
 		}
 	}
 
-	return curp - buf;
+	return len - remain;
 }
 
-int write_n(int fd, const void *buf, size_t len)
+ssize_t write_n(int fd, const void *buf, size_t len)
 {
 	void *curp = buf;
 	size_t remain;
@@ -58,5 +58,5 @@ int write_n(int fd, const void *buf, size_t len)
 		}
 	}
 
-	return curp - buf;
+	return len - remain;
 }
