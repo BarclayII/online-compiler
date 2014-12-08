@@ -49,4 +49,9 @@
 #define YACCOUT_CONFIG	".yaccout$"
 #endif
 
+#ifndef SRVR_MAXCONN
+#include <sys/socket.h>
+#define SRVR_MAXCONN	SOMAXCONN
+#endif
+
 #endif

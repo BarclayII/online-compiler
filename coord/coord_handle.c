@@ -15,7 +15,7 @@ static void coord_handle_read(int fd, void *buf, size_t len)
 static void coord_handle_write(int fd, const void *buf, size_t len)
 {
 	if (write_n(fd, buf, len) == -1) {
-		pinfo(PINFO_ERROR, TRUE, "read");
+		pinfo(PINFO_ERROR, TRUE, "write");
 		coord_term(1);
 	}
 }
