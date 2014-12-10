@@ -14,6 +14,7 @@ struct _pool_task {
 
 struct _pool {
 	int max_task, max_thread;
+	int task_front, task_rear;
 	struct _pool_task *task;
 	pthread_mutex_t lock;
 	pthread_t *thread;

@@ -9,6 +9,8 @@ pool_t *pool_new(int max_task, int max_thread)
 	new->max_task = max_task;
 	new->max_thread = max_thread;
 
+	new->task_front = new->task_rear = 0;
+
 	new->task = 
 	    (struct _pool_task *)calloc(max_task, sizeof(struct _pool_task));
 	if (new->task == NULL)
@@ -54,13 +56,35 @@ fail:
 
 static void *thread_entry(void *arg)
 {
-	struct _pool_task task;
+	struct _pool_task *task;
 	pool_t *pool = (pool_t *)arg;
 	for (;;) {
-		limit_sem_wait(&(new->sem), pool_fetch_task, pool, &task);
+		limit_sem_wait(&(new->sem), pool_fetch_task, pool, (void **)&task);
+		(task->fn)(task->data);
+		free_n(&task);
 	}
 }
 
 static void *pool_fetch_task(pool_t *pool)
 {
+	struct _pool_task *task;
+
+	task = (struct _pool_task *)malloc(sizeof(struct _pool_task));
+
+	if (task == NULL)
+		return NULL;
+
+	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
+		pinfo(PINFO_ERROR, TRUE, "acquiring thread pool lock failed");
+		srvr_intern_error(PINFO_ERROR);
+	}
+
+	memcpy(task, pool->task[(pool->task_front)++], sizeof(struct _pool_task));
+
+	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
+		pinfo(PINFO_ERROR, TRUE, "releasing thread pool lock failed");
+		srvr_intern_error(PINFO_ERROR);
+	}
+
+	return task;
 }
