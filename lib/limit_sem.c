@@ -36,8 +36,13 @@ limit_sem_process_cbs(struct limit_sem_cb_struct *cbs)
 	if (cbs->func != NULL)
 		if (cbs->ret == NULL)
 			(*(cbs->func))(cbs->arg);
-		else
+		else if (cbs->ret_size == 0)
 			cbs->ret = (*(cbs->func))(cbs->arg);
+		else {
+			void *tmp = (*(cbs->func))(cbs->arg);
+			memmove(cbs->ret, tmp, cbs->ret_size);
+			free_n(&tmp);
+		}
 }
 
 int
