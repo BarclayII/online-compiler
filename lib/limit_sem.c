@@ -30,16 +30,22 @@ limit_sem_destroy(limit_sem_t *sem)
 	return 0;
 }
 
+static void
+limit_sem_process_cbs(struct limit_sem_cb_struct *cbs)
+{
+	if (cbs->func != NULL)
+		if (cbs->ret == NULL)
+			(*(cbs->func))(cbs->arg);
+		else
+			cbs->ret = (*(cbs->func))(cbs->arg);
+}
+
 int
-limit_sem_wait(limit_sem_t *sem, void *(*callback)(void *), void *arg, void **ret)
+limit_sem_wait(limit_sem_t *sem, struct limit_sem_cb_struct *cbs)
 {
 	if (sem_wait(&(sem->sem_set)) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_unset)) != 0)
 		return -1;
 	return 0;
@@ -51,11 +57,7 @@ limit_sem_trywait(limit_sem_t *sem, void *(*callback)(void *),
 {
 	if (sem_trywait(&(sem->sem_set)) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_unset)) != 0)
 		return -1;
 	return 0;
@@ -67,11 +69,7 @@ limit_sem_timedwait(limit_sem_t *sem, const struct timespec *abs_timeout,
 {
 	if (sem_timedwait(&(sem->sem_set), abs_timeout) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_unset)) != 0)
 		return -1;
 	return 0;
@@ -82,11 +80,7 @@ limit_sem_post(limit_sem_t *sem, void *(*callback)(void *), void *arg, void **re
 {
 	if (sem_wait(&(sem->sem_unset)) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_set)) != 0)
 		return -1;
 	return 0;
@@ -98,11 +92,7 @@ limit_sem_trypost(limit_sem_t *sem, void *(*callback)(void *),
 {
 	if (sem_trywait(&(sem->sem_unset)) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_set)) != 0)
 		return -1;
 	return 0;
@@ -114,11 +104,7 @@ limit_sem_timedpost(limit_sem_t *sem, const struct timespec *abs_timeout,
 {
 	if (sem_timedwait(&(sem->sem_unset), abs_timeout) != 0)
 		return -1;
-	if (callback != NULL)
-		if (ret == NULL)
-			(*callback)(arg);
-		else
-			*ret = (*callback)(arg);
+	limit_sem_process_cbs(cbs);
 	if (sem_post(&(sem->sem_set)) != 0)
 		return -1;
 }
