@@ -34,9 +34,7 @@ static void
 limit_sem_process_cbs(struct limit_sem_cb_struct *cbs)
 {
 	if (cbs->func != NULL)
-		if (cbs->ret == NULL)
-			(*(cbs->func))(cbs->arg);
-		else if (cbs->ret_size == 0)
+		if (cbs->ret_size == 0 || cbs->ret == NULL)
 			cbs->ret = (*(cbs->func))(cbs->arg);
 		else {
 			void *tmp = (*(cbs->func))(cbs->arg);

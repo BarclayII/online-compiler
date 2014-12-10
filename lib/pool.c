@@ -54,15 +54,39 @@ fail:
 	return NULL;
 }
 
+void pool_terminate(pool_t *pool)
+{
+	int i;
+	for (i = 0; i < pool->max_thread; ++i)
+		pthread_cancel(pool->thread[i]);
+	limit_sem_destroy(&(pool->sem));
+	free_n(&(pool->thread));
+	pthread_mutex_destroy(&(pool->lock));
+	free_n(&(pool->task));
+	free_n(&pool);
+}
+
 static void *thread_entry(void *arg)
 {
 	struct _pool_task *task;
 	pool_t *pool = (pool_t *)arg;
+
+	struct limit_sem_cb_struct cbs;
+
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	cbs.func = pool_fetch_task;
+	cbs.arg = pool;
+	cbs.ret_size = 0;
+
 	for (;;) {
-		limit_sem_wait(&(new->sem), pool_fetch_task, pool, (void **)&task);
+		limit_sem_wait(&(new->sem), &cbs);
+		task = (struct _pool_task *)(cbs.ret);
 		(task->fn)(task->data);
 		free_n(&task);
 	}
+
+	return NULL;
 }
 
 static void *pool_fetch_task(pool_t *pool)
@@ -75,16 +99,47 @@ static void *pool_fetch_task(pool_t *pool)
 		return NULL;
 
 	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
-		pinfo(PINFO_ERROR, TRUE, "acquiring thread pool lock failed");
+		free_n(&task);
+		pinfo(PINFO_ERROR, TRUE, "fetch_task(): locking mutex");
 		srvr_intern_error(PINFO_ERROR);
+		return NULL;
 	}
 
-	memcpy(task, pool->task[(pool->task_front)++], sizeof(struct _pool_task));
+	memmove(task, pool->task[(pool->task_front)++], sizeof(struct _pool_task));
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
-		pinfo(PINFO_ERROR, TRUE, "releasing thread pool lock failed");
+		free_n(&task);
+		pinfo(PINFO_ERROR, TRUE, "fetch_task(): unlocking mutex");
 		srvr_intern_error(PINFO_ERROR);
+		return NULL;
 	}
 
 	return task;
+}
+
+static void *pool_submit_local(pool_t *pool, void (*)func(void *), void *arg)
+{
+	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
+		free_n(&task);
+		pinfo(PINFO_ERROR, TRUE, "submit(): locking mutex");
+		srvr_intern_error(PINFO_ERROR);
+		return NULL;
+	}
+
+	pool->task[pool->task_rear].fn = func;
+	pool->task[pool->task_rear].data = arg;
+	++(pool->task_rear);
+
+	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
+		free_n(&task);
+		pinfo(PINFO_ERROR, TRUE, "submit(): unlocking mutex");
+		srvr_intern_error(PINFO_ERROR);
+		return NULL;
+	}
+
+	return NULL;
+}
+
+int pool_submit(pool_t *pool, void (*)func(void *), void *arg)
+{
 }

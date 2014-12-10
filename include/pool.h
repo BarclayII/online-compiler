@@ -31,7 +31,7 @@ pool_t *pool_new(int max_task, int max_thread);
 /*
  * Terminate the thread pool.
  */
-int pool_finalize(pool_t *pool);
+void pool_terminate(pool_t *pool);
 
 /*
  * Submit a task to thread pool.
