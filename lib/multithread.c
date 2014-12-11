@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <errno.h>
 #include "multithread.h"
 
 int pthread_mutex_lock_n(pthread_mutex_t *mutex)

@@ -5,6 +5,7 @@
  * A thread pool implementation
  */
 
+#include <pthread.h>
 #include "limit_sem.h"
 
 struct _pool_task {
@@ -16,7 +17,7 @@ struct _pool {
 	int max_task, max_thread;
 	int task_front, task_rear;
 	struct _pool_task *task;
-	pthread_mutex_t lock;
+	pthread_mutex_t mutex;
 	pthread_t *thread;
 	limit_sem_t sem;
 };
@@ -36,6 +37,6 @@ void pool_terminate(pool_t *pool);
 /*
  * Submit a task to thread pool.
  */
-int pool_submit(pool_t *pool, void (*)func(void *), void *arg);
+int pool_submit(pool_t *pool, void (*func)(void *), void *arg);
 
 #endif

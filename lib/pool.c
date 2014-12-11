@@ -1,8 +1,18 @@
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <errno.h>
 #include "pool.h"
+#include "mem.h"
+#include "limit_sem.h"
+#include "multithread.h"
+
+static void *thread_entry(void *arg);
 
 pool_t *pool_new(int max_task, int max_thread)
 {
-	pool_t *new = (pool_t)malloc(sizeof(pool_t));
+	int errno_saved;
+	pool_t *new = (pool_t *)malloc(sizeof(pool_t));
 	if (new == NULL)
 		goto fail;
 
@@ -16,7 +26,7 @@ pool_t *pool_new(int max_task, int max_thread)
 	if (new->task == NULL)
 		goto clear_pool;
 
-	if (pthread_mutex_init(&(new->lock), NULL) != 0)
+	if (pthread_mutex_init(&(new->mutex), NULL) != 0)
 		goto clear_task;
 
 	new->thread = (pthread_t *)calloc(max_thread, sizeof(pthread_t));
@@ -36,7 +46,7 @@ pool_t *pool_new(int max_task, int max_thread)
 	return new;
 
 term_threads:
-	int errno_saved = errno;
+	errno_saved = errno;
 	for (i = 0; i < max_thread; ++i) {
 		pthread_cancel(new->thread[i]);
 	}
@@ -45,7 +55,7 @@ clear_sem:
 clear_thread:
 	free_n(&(new->thread));
 clear_mutex:
-	pthread_mutex_destroy(&(new->lock));
+	pthread_mutex_destroy(&(new->mutex));
 clear_task:
 	free_n(&(new->task));
 clear_pool:
@@ -61,9 +71,35 @@ void pool_terminate(pool_t *pool)
 		pthread_cancel(pool->thread[i]);
 	limit_sem_destroy(&(pool->sem));
 	free_n(&(pool->thread));
-	pthread_mutex_destroy(&(pool->lock));
+	pthread_mutex_destroy(&(pool->mutex));
 	free_n(&(pool->task));
 	free_n(&pool);
+}
+
+static void *pool_fetch_task(void *arg)
+{
+	pool_t *pool = (pool_t *)arg;
+	struct _pool_task *task;
+
+	task = (struct _pool_task *)malloc(sizeof(struct _pool_task));
+
+	if (task == NULL)
+		return NULL;
+
+	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
+		free_n(&task);
+		return NULL;
+	}
+
+	memmove(task, &(pool->task[(pool->task_front)++]),
+	    sizeof(struct _pool_task));
+
+	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
+		free_n(&task);
+		return NULL;
+	}
+
+	return task;
 }
 
 static void *thread_entry(void *arg)
@@ -80,7 +116,7 @@ static void *thread_entry(void *arg)
 	cbs.ret_size = 0;
 
 	for (;;) {
-		limit_sem_wait(&(new->sem), &cbs);
+		limit_sem_wait(&(pool->sem), &cbs);
 		task = (struct _pool_task *)(cbs.ret);
 		(task->fn)(task->data);
 		free_n(&task);
@@ -89,31 +125,7 @@ static void *thread_entry(void *arg)
 	return NULL;
 }
 
-static void *pool_fetch_task(pool_t *pool)
-{
-	struct _pool_task *task;
-
-	task = (struct _pool_task *)malloc(sizeof(struct _pool_task));
-
-	if (task == NULL)
-		return NULL;
-
-	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
-		return NULL;
-	}
-
-	memmove(task, pool->task[(pool->task_front)++], sizeof(struct _pool_task));
-
-	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
-		return NULL;
-	}
-
-	return task;
-}
-
-static struct _pool_with_task {
+struct _pool_with_task {
 	pool_t *pool;
 	struct _pool_task task;
 };
@@ -124,22 +136,20 @@ static void *pool_submit_local(void *arg)
 	pool_t *pool = pt->pool;
 
 	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
 		return NULL;
 	}
 
-	memmove(pool->task[(pool->task_rear)++], &(pt->task),
+	memmove(&(pool->task[(pool->task_rear)++]), &(pt->task),
 	    sizeof(struct _pool_task));
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
 		return NULL;
 	}
 
 	return NULL;
 }
 
-int pool_submit(pool_t *pool, void (*)func(void *), void *arg)
+int pool_submit(pool_t *pool, void (*func)(void *), void *arg)
 {
 	struct limit_sem_cb_struct cbs;
 	struct _pool_with_task pt;

@@ -7,7 +7,10 @@
  * This implementation is not robust.
  */
 #include <stdio.h>
+#include <string.h>
+#include <semaphore.h>
 #include "limit_sem.h"
+#include "mem.h"
 
 int
 limit_sem_init(limit_sem_t *sem, int pshared, unsigned int maximum, 
@@ -55,8 +58,7 @@ limit_sem_wait(limit_sem_t *sem, struct limit_sem_cb_struct *cbs)
 }
 
 int
-limit_sem_trywait(limit_sem_t *sem, void *(*callback)(void *),
-		void *arg, void **ret)
+limit_sem_trywait(limit_sem_t *sem, struct limit_sem_cb_struct *cbs)
 {
 	if (sem_trywait(&(sem->sem_set)) != 0)
 		return -1;
@@ -68,7 +70,7 @@ limit_sem_trywait(limit_sem_t *sem, void *(*callback)(void *),
 
 int
 limit_sem_timedwait(limit_sem_t *sem, const struct timespec *abs_timeout,
-		void *(*callback)(void *), void *arg, void **ret)
+    struct limit_sem_cb_struct *cbs)
 {
 	if (sem_timedwait(&(sem->sem_set), abs_timeout) != 0)
 		return -1;
@@ -79,7 +81,7 @@ limit_sem_timedwait(limit_sem_t *sem, const struct timespec *abs_timeout,
 }
 
 int
-limit_sem_post(limit_sem_t *sem, void *(*callback)(void *), void *arg, void **ret)
+limit_sem_post(limit_sem_t *sem, struct limit_sem_cb_struct *cbs)
 {
 	if (sem_wait(&(sem->sem_unset)) != 0)
 		return -1;
@@ -90,8 +92,7 @@ limit_sem_post(limit_sem_t *sem, void *(*callback)(void *), void *arg, void **re
 }
 
 int
-limit_sem_trypost(limit_sem_t *sem, void *(*callback)(void *),
-		void *arg, void **ret)
+limit_sem_trypost(limit_sem_t *sem, struct limit_sem_cb_struct *cbs)
 {
 	if (sem_trywait(&(sem->sem_unset)) != 0)
 		return -1;
@@ -103,7 +104,7 @@ limit_sem_trypost(limit_sem_t *sem, void *(*callback)(void *),
 
 int
 limit_sem_timedpost(limit_sem_t *sem, const struct timespec *abs_timeout,
-		void *(*callback)(void *), void *arg, void **ret)
+    struct limit_sem_cb_struct *cbs)
 {
 	if (sem_timedwait(&(sem->sem_unset), abs_timeout) != 0)
 		return -1;
