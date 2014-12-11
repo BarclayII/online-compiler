@@ -100,8 +100,6 @@ static void *pool_fetch_task(pool_t *pool)
 
 	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
 		free_n(&task);
-		pinfo(PINFO_ERROR, TRUE, "fetch_task(): locking mutex");
-		srvr_intern_error(PINFO_ERROR);
 		return NULL;
 	}
 
@@ -109,31 +107,32 @@ static void *pool_fetch_task(pool_t *pool)
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
 		free_n(&task);
-		pinfo(PINFO_ERROR, TRUE, "fetch_task(): unlocking mutex");
-		srvr_intern_error(PINFO_ERROR);
 		return NULL;
 	}
 
 	return task;
 }
 
-static void *pool_submit_local(pool_t *pool, void (*)func(void *), void *arg)
+static struct _pool_with_task {
+	pool_t *pool;
+	struct _pool_task task;
+};
+
+static void *pool_submit_local(void *arg)
 {
+	struct _pool_with_task *pt = (struct _pool_with_task *)arg;
+	pool_t *pool = pt->pool;
+
 	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
 		free_n(&task);
-		pinfo(PINFO_ERROR, TRUE, "submit(): locking mutex");
-		srvr_intern_error(PINFO_ERROR);
 		return NULL;
 	}
 
-	pool->task[pool->task_rear].fn = func;
-	pool->task[pool->task_rear].data = arg;
-	++(pool->task_rear);
+	memmove(pool->task[(pool->task_rear)++], &(pt->task),
+	    sizeof(struct _pool_task));
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
 		free_n(&task);
-		pinfo(PINFO_ERROR, TRUE, "submit(): unlocking mutex");
-		srvr_intern_error(PINFO_ERROR);
 		return NULL;
 	}
 
@@ -142,4 +141,14 @@ static void *pool_submit_local(pool_t *pool, void (*)func(void *), void *arg)
 
 int pool_submit(pool_t *pool, void (*)func(void *), void *arg)
 {
+	struct limit_sem_cb_struct cbs;
+	struct _pool_with_task pt;
+	pt.pool = pool;
+	pt.task.fn = func;
+	pt.task.data = arg;
+	cbs.func = pool_submit_local;
+	cbs.arg = &pt;
+	cbs.ret = NULL;
+	cbs.ret_size = 0;
+	return limit_sem_trypost(&(pool->sem), &cbs);
 }
