@@ -22,7 +22,7 @@ pool_t *pool_new(int max_task, int max_thread)
 	new->task_front = new->task_rear = 0;
 
 	new->task = 
-	    (struct _pool_task *)calloc(max_task, sizeof(struct _pool_task));
+	    (struct _pool_task **)calloc(max_task, sizeof(struct _pool_task *));
 	if (new->task == NULL)
 		goto clear_pool;
 
@@ -79,27 +79,21 @@ void pool_terminate(pool_t *pool)
 static void *pool_fetch_task(void *arg)
 {
 	pool_t *pool = (pool_t *)arg;
-	struct _pool_task *task;
-
-	task = (struct _pool_task *)malloc(sizeof(struct _pool_task));
-
-	if (task == NULL)
-		return NULL;
 
 	if (pthread_mutex_lock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
 		return NULL;
 	}
 
-	memmove(task, &(pool->task[(pool->task_front)++]),
-	    sizeof(struct _pool_task));
+	struct _pool_task *current_task = pool->task[pool->task_front];
+	++(pool->task_front);
+	if (pool->task_front >= pool->max_task)
+		pool->task_front -= pool->max_task;
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
-		free_n(&task);
 		return NULL;
 	}
 
-	return task;
+	return current_task;
 }
 
 static void *thread_entry(void *arg)
@@ -127,7 +121,7 @@ static void *thread_entry(void *arg)
 
 struct _pool_with_task {
 	pool_t *pool;
-	struct _pool_task task;
+	struct _pool_task *task;
 };
 
 static void *pool_submit_local(void *arg)
@@ -139,8 +133,9 @@ static void *pool_submit_local(void *arg)
 		return NULL;
 	}
 
-	memmove(&(pool->task[(pool->task_rear)++]), &(pt->task),
-	    sizeof(struct _pool_task));
+	pool->task[(pool->task_rear)++] = pt->task;
+	if (pool->task_rear >= pool->max_task)
+		pool->task_rear -= pool->max_task;
 
 	if (pthread_mutex_unlock_n(&(pool->mutex)) != 0) {
 		return NULL;
@@ -149,13 +144,20 @@ static void *pool_submit_local(void *arg)
 	return NULL;
 }
 
-int pool_submit(pool_t *pool, void (*func)(void *), void *arg)
+int pool_submit(pool_t *pool, void (*func)(void *), void *arg, size_t len, int copy)
 {
 	struct limit_sem_cb_struct cbs;
 	struct _pool_with_task pt;
 	pt.pool = pool;
-	pt.task.fn = func;
-	pt.task.data = arg;
+	pt.task = (struct _pool_task *)malloc(sizeof(struct _pool_task));
+	pt.task->fn = func;
+	if (!copy)
+		pt.task->data = arg;
+	else {
+		pt.task->data = malloc(len);
+		memmove(pt.task->data, arg, len);
+	}
+	pt.task->len = len;
 	cbs.func = pool_submit_local;
 	cbs.arg = &pt;
 	cbs.ret = NULL;
