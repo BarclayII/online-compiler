@@ -19,12 +19,20 @@ void srvr_init_priv(void)
 	}
 }
 
+void srvr_init_pool(void)
+{
+	pool = pool_init(SRVR_MAXTASK, SRVR_MAXTHREAD);
+}
+
 void srvr_enter(int fd)
 {
 	coord_fd = fd;
 
 	/* initialize privilege e.g. setting up working directory and user id */
 	srvr_init_priv();
+
+	/* initialize pool */
+	srvr_init_pool();
 
 	/* enter main routine */
 	srvr_main();

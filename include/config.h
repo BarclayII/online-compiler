@@ -54,4 +54,12 @@
 #define SRVR_MAXCONN	SOMAXCONN
 #endif
 
+#ifndef SRVR_MAXTASK
+#define SRVR_MAXTASK	SRVR_MAXCONN
+#endif
+
+#ifndef SRVR_MAXTHREAD
+#define SRVR_MAXTHREAD	SRVR_MAXCONN
+#endif
+
 #endif
