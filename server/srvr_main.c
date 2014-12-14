@@ -6,6 +6,28 @@
 void srvr_spinup(void *arg)
 {
 	int client_fd = *(int *)arg;
+	FILE *fp_r = fdopen(client_fd, "r");
+	if (fp_r == NULL) {
+		pinfo(PINFO_ERROR, TRUE, "fdopen");
+		srvr_intern_error(PINFO_ERROR);
+		goto finish;
+	}
+
+	FILE *fp_w = fdopen(dup(client_fd), "w");
+	if (fp_w == NULL) {
+		pinfo(PINFO_ERROR, TRUE, "fdopen");
+		srvr_intern_error(PINFO_ERROR);
+		goto finish;
+	}
+
+	yyscan_t *scanner;
+	yylex_init(&scanner);
+
+finish:
+	if (fp_r != NULL)
+		fclose(fp_r);
+	if (fp_w != NULL)
+		fclose(fp_w);
 }
 
 void srvr_main(void)
