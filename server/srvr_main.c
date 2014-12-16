@@ -6,28 +6,27 @@
 void srvr_spinup(void *arg)
 {
 	int client_fd = *(int *)arg;
-	FILE *fp_r = fdopen(client_fd, "r");
+	FILE *fp = fdopen(client_fd, "r+");
 	if (fp_r == NULL) {
 		pinfo(PINFO_ERROR, TRUE, "fdopen");
 		srvr_intern_error(PINFO_ERROR);
 		goto finish;
 	}
+	setlinebuf(fp);
 
-	FILE *fp_w = fdopen(dup(client_fd), "w");
-	if (fp_w == NULL) {
-		pinfo(PINFO_ERROR, TRUE, "fdopen");
-		srvr_intern_error(PINFO_ERROR);
-		goto finish;
-	}
+	char *dir;
 
-	yyscan_t *scanner;
+	yyscan_t scanner;
 	yylex_init(&scanner);
+	yyset_in(fp, scanner);
+	dir = yylex(client_fd, scanner);
+	yylex_destroy(&scanner);
+
+	srvr_init_cmpl(dir);
 
 finish:
-	if (fp_r != NULL)
-		fclose(fp_r);
-	if (fp_w != NULL)
-		fclose(fp_w);
+	if (fp != NULL)
+		fclose(fp);
 }
 
 void srvr_main(void)
@@ -54,6 +53,7 @@ void srvr_main(void)
 	int sock;
 	while ((sock = accept(listen_fd, (struct sockaddr *)&sin, sizeof(sin)))
 	    != -1) {
-		pool_submit(srvr_pool, srvr_spinup, &sock);
+		if (pool_submit(srvr_pool, srvr_spinup, &sock) != 0)
+			close(sock);
 	}
 }

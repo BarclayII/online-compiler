@@ -14,7 +14,7 @@ char *filename = NULL;
 
 char *tmptxt = NULL;
 
-#define YY_DECL		int yylex(int sockfd, yyscan_t yyscanner)
+#define YY_DECL		char *yylex(int sockfd, yyscan_t yyscanner)
 
 %}
 
@@ -41,23 +41,23 @@ NUMBER	([0-9]+)
 	if (tmpdir == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
 ^OUTEXEC" "{NAME}		{
-	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
+	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
 ^LDFLAGS" "{TEXT}		{
-	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == -1) {
+	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
@@ -70,10 +70,10 @@ NUMBER	([0-9]+)
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
 	if (srvr_set_cflags(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 7))) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
@@ -92,10 +92,10 @@ NUMBER	([0-9]+)
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
 	if (srvr_set_lexout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 7))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 7))) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
@@ -108,10 +108,10 @@ NUMBER	([0-9]+)
 }
 <YACC>^YACCOUT" "{CSOURCE}	{
 	if (srvr_set_yaccout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 8))) == -1) {
+	    tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 }
@@ -129,10 +129,10 @@ NUMBER	([0-9]+)
 	}
 }
 <TEXT>{LINE}			{
-	if (srvr_puts(cur_file, yytext) == -1) {
+	if (srvr_puts(cur_file, yytext) == NULL) {
 		srvr_reply(sockfd, SR_ERROR_INTERN);
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 	free_n(&tmptxt);
 	if (++cur_line == lines) {
@@ -150,12 +150,12 @@ END	{
 .	{
 	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
-	return -1;
+	return NULL;
 }
 <<EOF>> {
 	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
-	return -1;
+	return NULL;
 }
 %%
 
@@ -172,13 +172,13 @@ void srvr_create_report_error(void)
 			break;
 		}
 		srvr_yyfinish();
-		return -1;
+		return NULL;
 	}
 }
 
 void srvr_yyfinish(void)
 {
-	free_n(&tmpdir);
 	free_n(&tmptxt);
 	free_n(&filename);
+	return tmpdir;
 }
