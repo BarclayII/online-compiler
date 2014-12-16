@@ -113,6 +113,8 @@ static void *thread_entry(void *arg)
 		limit_sem_wait(&(pool->sem), &cbs);
 		task = (struct _pool_task *)(cbs.ret);
 		(task->fn)(task->data);
+		if (task->copy)
+			free_n(&(task->data));
 		free_n(&task);
 	}
 
@@ -158,6 +160,7 @@ int pool_submit(pool_t *pool, void (*func)(void *), void *arg, size_t len, int c
 		memmove(pt.task->data, arg, len);
 	}
 	pt.task->len = len;
+	pt.task->copy = copy;
 	cbs.func = pool_submit_local;
 	cbs.arg = &pt;
 	cbs.ret = NULL;

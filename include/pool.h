@@ -13,6 +13,7 @@ struct _pool_task {
 	void (*fn)(void *);
 	void *data;
 	size_t len;
+	int copy;
 };
 
 struct _pool {

@@ -1,9 +1,12 @@
 %option noyywrap nodefault yylineno reentrant
 
 %{
-#include "srvr_local.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include "srvr_local.h"
 #include "strl.h"
+#include "lexer.h"
 
 int lines = 0, cur_line = 0;
 
@@ -13,8 +16,6 @@ char *tmpdir = NULL;
 char *filename = NULL;
 
 char *tmptxt = NULL;
-
-#define YY_DECL		char *yylex(int sockfd, yyscan_t yyscanner)
 
 %}
 
@@ -37,25 +38,25 @@ NUMBER	([0-9]+)
 
 %%
 ^USER" "{NAME}			{
-	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yytext + 5)));
+	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yyget_text(yyscanner) + 5)));
 	if (tmpdir == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
 	free_n(&tmptxt);
 }
 ^OUTEXEC" "{NAME}		{
-	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
 	free_n(&tmptxt);
 }
 ^LDFLAGS" "{TEXT}		{
-	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
@@ -64,14 +65,14 @@ NUMBER	([0-9]+)
 ^CSOURCE" "{CSOURCE}		{
 	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 8)));
+		filename = strtrim(strdup(yyget_text(yyscanner) + 8)));
 	srvr_create_report_error();
 	BEGIN CSOURCE;
 }
 <CSOURCE>^CFLAGS" "{TEXT}	{
 	if (srvr_set_cflags(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 7))) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 7))) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
@@ -79,21 +80,21 @@ NUMBER	([0-9]+)
 }
 ^CHEADER" "{CHEADER}		{
 	cur_file = srvr_create_file(tmpdir,
-		filename = strtrim(strdup(yytext + 8)));
+		filename = strtrim(strdup(yyget_text(yyscanner) + 8)));
 	srvr_create_report_error();
 	BEGIN CSOURCE;
 }
 ^LEX" "{LEX}			{
 	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 4)));
+		filename = strtrim(strdup(yyget_text(yyscanner) + 4)));
 	srvr_create_report_error();
 	BEGIN LEX;
 }
 <LEX>^LEXOUT" "{CSOURCE}		{
 	if (srvr_set_lexout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 7))) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 7))) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
@@ -102,21 +103,21 @@ NUMBER	([0-9]+)
 ^YACC" "{YACC}			{
 	cur_file = srvr_create_file(
 		tmpdir,
-		filename = strtrim(strdup(yytext + 5)));
+		filename = strtrim(strdup(yyget_text(yyscanner) + 5)));
 	srvr_create_report_error();
 	BEGIN YACC;
 }
 <YACC>^YACCOUT" "{CSOURCE}	{
 	if (srvr_set_yaccout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yytext + 8))) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
 	free_n(&tmptxt);
 }
 <CSOURCE,LEX,YACC>^TEXTLINES" "{NUMBER}	{
-	lines = atoi(yytext + 10);
+	lines = atoi(yyget_text(yyscanner) + 10);
 	cur_line = 0;
 	if (lines > 0)
 		BEGIN TEXT;
@@ -129,8 +130,8 @@ NUMBER	([0-9]+)
 	}
 }
 <TEXT>{LINE}			{
-	if (srvr_puts(cur_file, yytext) == NULL) {
-		srvr_reply(sockfd, SR_ERROR_INTERN);
+	if (srvr_puts(cur_file, yyget_text(yyscanner)) == NULL) {
+		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish();
 		return NULL;
 	}
@@ -148,12 +149,12 @@ END	{
 	return 0;
 }
 .	{
-	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
+	srvr_reply(sockfp, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
 	return NULL;
 }
 <<EOF>> {
-	srvr_reply(sockfd, SR_ERROR_BAD_REQUEST);
+	srvr_reply(sockfp, SR_ERROR_BAD_REQUEST);
 	srvr_yyfinish();
 	return NULL;
 }
@@ -165,10 +166,10 @@ void srvr_create_report_error(void)
 		switch (errno) {
 		case EEXIST:
 		case EISDIR:
-			srvr_reply(sockfd, SR_ERROR_DUPNAME);
+			srvr_reply(sockfp, SR_ERROR_DUPNAME);
 			break;
 		default:
-			srvr_reply(sockfd, SR_ERROR_INTERN);
+			srvr_reply(sockfp, SR_ERROR_INTERN);
 			break;
 		}
 		srvr_yyfinish();
