@@ -6,16 +6,15 @@
 void srvr_init_priv(void)
 {
 	if (chdir(ROOTDIR) == -1) {
-		srvr_intern_error(PINFO_ERROR);
-		pinfo(PINFO_ERROR, TRUE, "chdir(\"%s\") failed", SRVR_ROOT);
+		srvr_intern_error(PINFO_ERROR, TRUE,
+		    "chdir(\"%s\") failed", SRVR_ROOT);
 	}
 	if (chroot(".") == -1) {
-		srvr_intern_error(PINFO_ERROR);
-		pinfo(PINFO_ERROR, TRUE, "chroot to current directory failed");
+		srvr_intern_error(PINFO_ERROR, TRUE,
+		    "chroot to current directory failed");
 	}
 	if (setuid(UID_SRVR) == -1) {
-		srvr_intern_error(PINFO_ERROR);
-		pinfo(PINFO_ERROR, TRUE, "setuid");
+		srvr_intern_error(PINFO_ERROR, TRUE, "setuid");
 	}
 }
 

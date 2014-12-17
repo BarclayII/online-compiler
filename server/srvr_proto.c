@@ -64,18 +64,12 @@ srvr_set_config(const char *dir, const char *file, const char *content)
 }
 
 /*
- * Create OUTEXEC and LDFLAGS config files
+ * Create OUTEXEC config files
  */
 int
 srvr_set_outexec(const char *dir, const char *outexec)
 {
 	return srvr_set_config(dir, OUTEXEC_CONFIG, outexec);
-}
-
-int
-srvr_set_ldflags(const char *dir, const char *ldflags)
-{
-	return srvr_set_config(dir, LDFLAGS_CONFIG, ldflags);
 }
 
 FILE *
@@ -107,60 +101,6 @@ srvr_create_file(const char *dir, const char *file)
 	free_n(&path);
 
 	return fp;
-}
-
-int
-srvr_set_file_config(const char *dir, const char *file, const char *suffix,
-    const char *content)
-{
-	int lf = strlen(file), lc = strlen(suffix);
-	char *cflags_fname = (char *)calloc(sizeof(char), lf + lc + 1);
-	memcpy(cflags_fname, file, lf + 1);
-	memcpy(cflags_fname + lf, suffix, lc + 1);
-	char *path = build_path(cflags_fname, dir);
-	if (path == NULL) {
-		pinfo(PINFO_ERROR, FALSE, "unable to build pathspec");
-		return -1;
-	}
-
-	FILE *fp;
-	if ((fp = fcreat(path, "w")) == NULL) {
-		pinfo(PINFO_WARN, TRUE, "create %s failed", path);
-		return -1;
-	}
-
-	if (fprintf(fp, "%s\n", content) < 0) {
-		pinfo(PINFO_WARN, TRUE, "output content to %s failed", path);
-		return -1;
-	}
-
-	if (fclose(fp) == EOF) {
-		pinfo(PINFO_WARN, TRUE, "fclose %s", path);
-		return -1;
-	}
-
-	free_n(&cflags_fname);
-	free_n(&path);
-
-	return 0;
-}
-
-int
-srvr_set_cflags(const char *dir, const char *file, const char *cflags)
-{
-	return srvr_set_file_config(dir, file, CFLAGS_CONFIG, cflags);
-}
-
-int
-srvr_set_lexout(const char *dir, const char *file, const char *lexout)
-{
-	return srvr_set_file_config(dir, file, LEXOUT_CONFIG, lexout);
-}
-
-int
-srvr_set_yaccout(const char *dir, const char *file, const char *yaccout)
-{
-	return srvr_set_file_config(dir, file, YACCOUT_CONFIG, yaccout);
 }
 
 int

@@ -2,7 +2,7 @@
 #include "pinfo.h"
 #include "msg.h"
 
-void srvr_intern_error(int level)
+void srvr_intern_error(int level, int append, const char *fmt, ...)
 {
 	struct msghdr hdr;
 	hdr.sender = PROC_SRVR;
@@ -13,4 +13,9 @@ void srvr_intern_error(int level)
 	hdr.un.errno = errno;
 
 	srvr_send_coord(&hdr, sizeof(hdr));
+
+	va_list ap;
+	va_start(ap, fmt);
+	vpinfo(level, append, fmt, ap);
+	va_end(ap);
 }

@@ -39,7 +39,8 @@ NUMBER	([0-9]+)
 
 %%
 ^USER" "{NAME}			{
-	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yyget_text(yyscanner) + 5)));
+	tmpdir = srvr_mkdir(
+	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 5)));
 	if (tmpdir == NULL) {
 		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish(1);
@@ -48,7 +49,8 @@ NUMBER	([0-9]+)
 	free_n(&tmptxt);
 }
 ^EXEC" "{TEXT}		{
-	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
+	if (srvr_set_outexec(tmpdir,
+	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
 		srvr_reply(sockfp, SR_ERROR_INTERN);
 		srvr_yyfinish(1);
 		return NULL;
