@@ -7,22 +7,21 @@ void srvr_spinup(void *arg)
 {
 	int client_fd = *(int *)arg;
 	FILE *fp = fdopen(client_fd, "r+");
-	if (fp_r == NULL) {
+	if (fp == NULL) {
 		pinfo(PINFO_ERROR, TRUE, "fdopen");
 		srvr_intern_error(PINFO_ERROR);
 		goto finish;
 	}
-	setlinebuf(fp);
 
 	char *dir;
 
 	yyscan_t scanner;
-	yylex_init(&scanner);
-	yyset_in(fp, scanner);
-	dir = yylex(client_fd, scanner);
-	yylex_destroy(&scanner);
+	yylex_init(&scanner); {
+		yyset_in(fp, scanner);
+		dir = yylex(client_fd, scanner);
+	} yylex_destroy(scanner);
 
-	srvr_init_cmpl(dir);
+	srvr_notify_cmpl(dir);
 
 finish:
 	if (fp != NULL)
@@ -51,9 +50,24 @@ void srvr_main(void)
 	}
 
 	int sock;
-	while ((sock = accept(listen_fd, (struct sockaddr *)&sin, sizeof(sin)))
-	    != -1) {
-		if (pool_submit(srvr_pool, srvr_spinup, &sock) != 0)
-			close(sock);
+	for (;;) {
+		sock = accept(listen_fd, (struct sockaddr *)&sin, &addr_size);
+		if (sock == -1) {
+			case EAGAIN:
+			case EINTR:
+				break;
+			case ECONNABORTED:
+				pinfo(PINFO_WARN, TRUE, "accept");
+				break;
+			default:
+				pinfo(PINFO_ERROR, TRUE, "accept");
+				break;
+		} else {
+			if (pool_submit(pool, srvr_spinup, &sock, sizeof(int), 0)
+			    != 0) {
+				close(sock);
+				pinfo(PINFO_WARN, TRUE, "submit");
+			}
+		}
 	}
 }

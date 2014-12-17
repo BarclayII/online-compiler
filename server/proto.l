@@ -22,6 +22,7 @@ char *tmptxt = NULL;
 %x CSOURCE
 %x LEX
 %x YACC
+%x MK
 %x LINES
 %x TEXT
 
@@ -41,23 +42,15 @@ NUMBER	([0-9]+)
 	tmpdir = srvr_mkdir(tmptxt = strtrim(strdup(yyget_text(yyscanner) + 5)));
 	if (tmpdir == NULL) {
 		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
+		srvr_yyfinish(1);
 		return NULL;
 	}
 	free_n(&tmptxt);
 }
-^OUTEXEC" "{NAME}		{
+^EXEC" "{TEXT}		{
 	if (srvr_set_outexec(tmpdir, tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
 		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
-		return NULL;
-	}
-	free_n(&tmptxt);
-}
-^LDFLAGS" "{TEXT}		{
-	if (srvr_set_ldflags(tmpdir, tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
-		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
+		srvr_yyfinish(1);
 		return NULL;
 	}
 	free_n(&tmptxt);
@@ -68,15 +61,6 @@ NUMBER	([0-9]+)
 		filename = strtrim(strdup(yyget_text(yyscanner) + 8)));
 	srvr_create_report_error();
 	BEGIN CSOURCE;
-}
-<CSOURCE>^CFLAGS" "{TEXT}	{
-	if (srvr_set_cflags(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 7))) == NULL) {
-		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
-		return NULL;
-	}
-	free_n(&tmptxt);
 }
 ^CHEADER" "{CHEADER}		{
 	cur_file = srvr_create_file(tmpdir,
@@ -91,15 +75,6 @@ NUMBER	([0-9]+)
 	srvr_create_report_error();
 	BEGIN LEX;
 }
-<LEX>^LEXOUT" "{CSOURCE}		{
-	if (srvr_set_lexout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 7))) == NULL) {
-		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
-		return NULL;
-	}
-	free_n(&tmptxt);
-}
 ^YACC" "{YACC}			{
 	cur_file = srvr_create_file(
 		tmpdir,
@@ -107,16 +82,12 @@ NUMBER	([0-9]+)
 	srvr_create_report_error();
 	BEGIN YACC;
 }
-<YACC>^YACCOUT" "{CSOURCE}	{
-	if (srvr_set_yaccout(tmpdir, filename, 
-	    tmptxt = strtrim(strdup(yyget_text(yyscanner) + 8))) == NULL) {
-		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
-		return NULL;
-	}
-	free_n(&tmptxt);
+^MAKEFILE			{
+	cur_file = srvr_create_file(tmpdir, "Makefile");
+	srvr_create_report_error();
+	BEGIN MK;
 }
-<CSOURCE,LEX,YACC>^TEXTLINES" "{NUMBER}	{
+<CSOURCE,LEX,YACC,MK>^TEXTLINES" "{NUMBER}	{
 	lines = atoi(yyget_text(yyscanner) + 10);
 	cur_line = 0;
 	if (lines > 0)
@@ -132,7 +103,7 @@ NUMBER	([0-9]+)
 <TEXT>{LINE}			{
 	if (srvr_puts(cur_file, yyget_text(yyscanner)) == NULL) {
 		srvr_reply(sockfp, SR_ERROR_INTERN);
-		srvr_yyfinish();
+		srvr_yyfinish(1);
 		return NULL;
 	}
 	free_n(&tmptxt);
@@ -145,17 +116,17 @@ NUMBER	([0-9]+)
 	}
 }
 END	{
-	srvr_yyfinish();
-	return 0;
+	srvr_yyfinish(0);
+	return tmpdir;
 }
 .	{
 	srvr_reply(sockfp, SR_ERROR_BAD_REQUEST);
-	srvr_yyfinish();
+	srvr_yyfinish(1);
 	return NULL;
 }
 <<EOF>> {
 	srvr_reply(sockfp, SR_ERROR_BAD_REQUEST);
-	srvr_yyfinish();
+	srvr_yyfinish(1);
 	return NULL;
 }
 %%
@@ -172,14 +143,15 @@ void srvr_create_report_error(void)
 			srvr_reply(sockfp, SR_ERROR_INTERN);
 			break;
 		}
-		srvr_yyfinish();
+		srvr_yyfinish(1);
 		return NULL;
 	}
 }
 
-void srvr_yyfinish(void)
+void srvr_yyfinish(int free_dir)
 {
 	free_n(&tmptxt);
 	free_n(&filename);
-	return tmpdir;
+	if (free_dir)
+		free_n(&tmpdir);
 }
