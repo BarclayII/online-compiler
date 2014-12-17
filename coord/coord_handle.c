@@ -29,8 +29,14 @@ int coord_handle(int proc_id)
 	coord_handle_read(fd, &hdr, sizeof(hdr));
 
 	/* read payload */
-	unsigned char *payload = (unsigned char *)malloc(hdr.payload_len);
-	coord_handle_read(fd, payload, hdr.payload_len);
+	if (hdr.payload_len != 0) {
+		char *payload = (char *)malloc(hdr.payload_len);
+		if (payload == NULL) {
+			pinfo(PINFO_ERROR, TRUE, "malloc");
+			coord_term(1);
+		}
+		coord_handle_read(fd, payload, hdr.payload_len);
+	}
 
 	if (hdr.receiver != PROC_COORD) {
 		/* forward messages whose destination is not the coordinator */

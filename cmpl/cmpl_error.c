@@ -8,4 +8,5 @@ void cmpl_error(void)
 	hdr.msgtype = MT_INTERN;
 	hdr.un.errno = errno;
 	hdr.payload_len = 0;
+	cmpl_send_coord(&hdr, sizeof(hdr));
 }
