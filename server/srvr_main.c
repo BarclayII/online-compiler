@@ -8,7 +8,7 @@ void srvr_spinup(void *arg)
 	int client_fd = *(int *)arg;
 	FILE *fp = fdopen(client_fd, "r+");
 	if (fp == NULL) {
-		srvr_intern_error(PINFO_ERROR, TRUE, "fdopen");
+		srvr_error(MT_INTERN, PINFO_ERROR, TRUE, "fdopen");
 		goto finish;
 	}
 
@@ -30,7 +30,7 @@ finish:
 void srvr_main(void)
 {
 	if ((listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-		srvr_intern_error(PINFO_ERROR, TRUE, "socket");
+		srvr_error(MT_INTERN, PINFO_ERROR, TRUE, "socket");
 	}
 
 	struct sockaddr_in sin;
@@ -38,11 +38,11 @@ void srvr_main(void)
 	sin.sin_port = SRVR_PORT;
 	sin.sin_addr.s_addr = INADDR_ANY;
 	if (bind(listen_fd, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
-		srvr_intern_error(PINFO_ERROR, TRUE, "bind");
+		srvr_error(MT_INTERN, PINFO_ERROR, TRUE, "bind");
 	}
 
 	if (listen(listen_fd, SRVR_MAXCONN) == -1) {
-		srvr_intern_error(PINFO_ERROR, TRUE, "listen")
+		srvr_error(MT_INTERN, PINFO_ERROR, TRUE, "listen")
 	}
 
 	int sock;

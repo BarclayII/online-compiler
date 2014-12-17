@@ -22,6 +22,11 @@ struct msghdr {
 				 * payload */
 #define MT_CHILD_EXITED	3	/* Executor's child exited with return code stored
 				 * in un.retcode */
-#define MT_CHILD_SIGNALLED 4	/* Executor's child signalled */
+#define MT_CHILD_SIGNALED 4	/* Executor's child signaled */
+
+void _error(int, int, int, const char *, ...);
+#define srvr_error _error
+#define cmpl_error _error
+void send_coord(void *, int);
 
 #endif

@@ -4,7 +4,7 @@
 void cmpl_init(void)
 {
 	if (setuid(UID_CMPL) == -1) {
-		cmpl_error(PINFO_ERROR, TRUE, "setuid");
+		cmpl_error(MT_INTERN, PINFO_ERROR, TRUE, "setuid");
 	}
 }
 
