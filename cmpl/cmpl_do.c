@@ -46,26 +46,9 @@ void cmpl_do_makefile()
 		}
 	} else {
 		/* redirect standard output and standard error */
-		out_fd = open(MAKE_STDOUT, O_PERM_CREAT, S_DEFAULT);
-		if (out_fd == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE,
-			    "open MAKE_STDOUT");
-			exit(CMPL_EXIT_FAIL);
-		}
-		err_fd = open(MAKE_STDERR, O_PERM_CREAT, S_DEFAULT);
-		if (err_fd == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE,
-			    "open MAKE_STDERR");
-			exit(CMPL_EXIT_FAIL);
-		}
-		if (dup2(out_fd, STDOUT_FILENO) == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE,
-			    "dup\'ing stdout");
-			exit(CMPL_EXIT_FAIL);
-		}
-		if (dup2(err_fd, STDERR_FILENO) == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE,
-			    "dup\'ing stderr");
+		if (redirect(NULL, MAKE_OUT, MAKE_ERR) != 0) {
+			cmpl_error(MT_INTERN, PINFO_ERROR, FALSE,
+			    "redirect make output and error failed");
 			exit(CMPL_EXIT_FAIL);
 		}
 
@@ -80,6 +63,40 @@ void cmpl_do_makefile()
 		cmpl_error(MT_INTERN, PINFO_ERROR, FALSE, "passed execve()?");
 		exit(CMPL_EXIT_FAIL);
 	}
+}
+
+/*
+ * Recursively traverse current directory and process each entry accordingly
+ */
+void cmpl_traverse(void)
+{
+	struct dirent **de;
+
+	int entries = scandir(dir, &de, NULL, alphasort);
+	int i;
+	
+	for (i = 0; i < entries; ++i) {
+		switch (de[i]->d_type) {
+		case DT_DIR:
+			chdir(de[i]->d_name);
+			cmpl_traverse();
+			chdir("..");
+			break;
+		case DT_REG:
+			cmpl_process(de[i]->d_name);
+			break;
+		}
+		free_n(&(de[i]->d_name));
+		free_n(&(de[i]));
+	}
+	free_n(&de);
+}
+
+void cmpl_do_child_default(void)
+{
+	/* traverse the directory and process each file */
+	cmpl_traverse();
+	/* TODO: link every object into a single executable a.out */
 }
 
 void cmpl_do_child(const char *dir)

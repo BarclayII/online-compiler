@@ -10,4 +10,6 @@ char *strrtrim(char *);
 char *strltrim(char *);
 char *strtrim(char *);
 
+const char *strtail(const char *, int);
+
 #endif

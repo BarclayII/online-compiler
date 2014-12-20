@@ -106,3 +106,8 @@ strtrim(char *str)
 {
 	return strltrim(strrtrim(str));
 }
+
+const char *strtail(const char *str, int len)
+{
+	return str + strlen(str) - len;
+}
