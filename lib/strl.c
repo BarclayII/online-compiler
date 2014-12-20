@@ -120,12 +120,12 @@ strtail(const char *str, int len)
  * If the reallocation fails, both @dst and @len are left unchanged,
  * and the function returns -1.
  */
-int
+ssize_t
 strappend(char **dst, const char *src, size_t len)
 {
 	/* saves original @dst address */
-	char *d = *dst, *s = src;
-	size_t len_s = strlen(s), len_d = strlen(d);
+	char *d = *dst;
+	size_t len_s = strlen(src), len_d = strlen(d);
 	if (len_d + len_s >= len) {
 		if ((*dst = realloc(*dst, len + len_s)) == NULL) {
 			*dst = d;
