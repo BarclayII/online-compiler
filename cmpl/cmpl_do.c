@@ -83,7 +83,7 @@ void cmpl_traverse(void)
 			chdir("..");
 			break;
 		case DT_REG:
-			cmpl_process(de[i]->d_name);
+			cmpl_process_file(de[i]->d_name);
 			break;
 		}
 		free_n(&(de[i]->d_name));

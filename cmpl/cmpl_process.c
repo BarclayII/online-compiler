@@ -1,7 +1,4 @@
 
-static const char *ldflags = NULL;
-static const char *cflags = NULL;
-
 void cmpl_process_msg(struct msghdr *hdr)
 {
 	switch (hdr->sender) {
@@ -18,13 +15,3 @@ void cmpl_process_msg(struct msghdr *hdr)
 	}
 }
 
-void cmpl_process(char *filename)
-{
-	switch (getextension(filename)) {
-	case FILE_CSOURCE:
-		cmpl_process_csource(filename);
-		break;
-	case FILE_CHEADER:
-		break;
-	}
-}

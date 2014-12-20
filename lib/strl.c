@@ -107,7 +107,34 @@ strtrim(char *str)
 	return strltrim(strrtrim(str));
 }
 
-const char *strtail(const char *str, int len)
+const char *
+strtail(const char *str, int len)
 {
 	return str + strlen(str) - len;
+}
+
+/*
+ * Append a string to a dynamically-allocated string with length @len.
+ * If the length of result string is greater than @len, this function
+ * reallocates @dst and extend its size, modifying @len if necessary.
+ * If the reallocation fails, both @dst and @len are left unchanged,
+ * and the function returns NULL.
+ */
+char *
+strappend(char **dst, const char *src, size_t *len)
+{
+	/* saves original @dst address */
+	char *d = *dst, *s = src;
+	size_t len_s = strlen(s), len_d = strlen(d);
+	if (len_d + len_s >= *len) {
+		if ((*dst = realloc(*dst, *len + len_s)) == NULL) {
+			*dst = d;
+			return NULL;
+		}
+		strlcat(*dst, src, *len + len_s);
+		*len += len_s;
+	} else {
+		strlcat(*dst, src, *len);
+	}
+	return *dst;
 }
