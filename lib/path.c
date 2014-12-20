@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "const.h"
 #include "strl.h"
 #include "path.h"
 
@@ -48,8 +49,6 @@ build_multi_level_path(const char *file, int num_level, ...)
 	va_end(ap);
 	return p;
 }
-
-#define O_PERM_CREAT	(O_RDWR | O_CREAT | O_TRUNC | O_EXCL)
 
 /*
  * creat() equivalent for FILE streams
