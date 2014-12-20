@@ -116,25 +116,25 @@ strtail(const char *str, int len)
 /*
  * Append a string to a dynamically-allocated string with length @len.
  * If the length of result string is greater than @len, this function
- * reallocates @dst and extend its size, modifying @len if necessary.
+ * reallocates @dst and extend its size, and returns the new size.
  * If the reallocation fails, both @dst and @len are left unchanged,
- * and the function returns NULL.
+ * and the function returns -1.
  */
-char *
-strappend(char **dst, const char *src, size_t *len)
+int
+strappend(char **dst, const char *src, size_t len)
 {
 	/* saves original @dst address */
 	char *d = *dst, *s = src;
 	size_t len_s = strlen(s), len_d = strlen(d);
-	if (len_d + len_s >= *len) {
-		if ((*dst = realloc(*dst, *len + len_s)) == NULL) {
+	if (len_d + len_s >= len) {
+		if ((*dst = realloc(*dst, len + len_s)) == NULL) {
 			*dst = d;
-			return NULL;
+			return -1;
 		}
-		strlcat(*dst, src, *len + len_s);
-		*len += len_s;
+		strlcat(*dst, src, len + len_s);
+		return len + len_s;
 	} else {
-		strlcat(*dst, src, *len);
+		strlcat(*dst, src, len);
+		return len;
 	}
-	return *dst;
 }
