@@ -8,9 +8,11 @@ void cmpl_process_msg(struct msghdr *hdr)
 	case PROC_SRVR:
 		char *dir = (char *)malloc(hdr->payload_len);
 		if (read_n(coord_fd, dir, hdr->payload_len) == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE, "read");
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, TRUE,
+			    "read");
+		} else {
+			cmpl_do(dir);
 		}
-		cmpl_do(dir);
 		break;
 	}
 }

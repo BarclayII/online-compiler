@@ -26,11 +26,13 @@ void cmpl_do_makefile()
 		if (waitpid(pid, &wait_stat, 0) == -1) {
 			/* do not check for error on kill() since an error
 			 * will be reported anyway. */
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE, "waitpid()");
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, TRUE,
+			    "waitpid()");
 			kill(pid, SIGTERM);
 			exit(CMPL_EXIT_FAIL);
 		} else if (WIFSIGNALED(wait_stat)) {
-			cmpl_error(MT_CHILD_SIGNALED, PINFO_ERROR, FALSE,
+			cmpl_error(MT_CHILD_SIGNALED, WTERMSIG(wait_stat),
+			    PINFO_ERROR, FALSE,
 			    "cmpl_do_makefile() child signaled %d",
 			    WTERMSIG(wait_stat));
 			exit(CMPL_EXIT_FAIL);
@@ -39,7 +41,8 @@ void cmpl_do_makefile()
 			case CMPL_EXIT_SUCCESS:
 				break;
 			case CMPL_EXIT_FAIL:
-				cmpl_error(MT_CHILD_EXITED, PINFO_ERROR, FALSE,
+				cmpl_error(MT_CHILD_EXITED,
+				    WEXITSTATUS(wait_stat), PINFO_ERROR, FALSE,
 				    "cmpl_do_makefile() failed internally");
 				break;
 			default:
@@ -47,27 +50,28 @@ void cmpl_do_makefile()
 			}
 		} else {
 			/* NOTREACHED */
-			cmpl_error(MT_INTERN, PINFO_ERROR, FALSE,
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, FALSE,
 			    "child neither exited nor signaled");
 			exit(CMPL_EXIT_FAIL);
 		}
 	} else {
 		/* redirect standard output and standard error */
 		if (redirect(NULL, MAKE_OUT, MAKE_ERR) != 0) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, FALSE,
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, FALSE,
 			    "redirect make output and error failed");
 			exit(CMPL_EXIT_FAIL);
 		}
 
 		/* invoke make utility, never returns */
 		if (execve(mkprog, NULL, NULL) == -1) {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE,
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, TRUE,
 			    "execve %s", mkprog);
 			exit(CMPL_EXIT_FAIL);
 		}
 
 		/* NOTREACHED */
-		cmpl_error(MT_INTERN, PINFO_ERROR, FALSE, "passed execve()?");
+		cmpl_error(MT_INTERN, errno, PINFO_ERROR, FALSE,
+		    "passed execve()?");
 		exit(CMPL_EXIT_FAIL);
 	}
 }
@@ -138,22 +142,25 @@ void cmpl_do(const char *dir)
 				/* else branch normally should not happen */
 			} else if (WIFSIGNALED(wait_stat)) {
 				cmpl_error(MT_CHILD_SIGNALED,
+				    WTERMSIG(wait_stat),
 				    PINFO_ERROR,
 				    TRUE,
 				    "compiler child signaled %d",
 				    WTERMSIG(wait_stat));
 			} else {
 				/* NOTREACHED */
-				cmpl_error(MT_INTERN, PINFO_ERROR, FALSE,
+				cmpl_error(MT_INTERN, errno, PINFO_ERROR,
+				    FALSE,
 				    "child neither exited nor signaled");
 			}
 		} else {
-			cmpl_error(MT_INTERN, PINFO_ERROR, TRUE, "waitpid");
+			cmpl_error(MT_INTERN, errno, PINFO_ERROR, TRUE,
+			    "waitpid");
 		}
 	} else {
 		cmpl_do_child(dir);
 		/* NOTREACHED */
-		cmpl_error(MT_INTERN, PINFO_ERROR, FALSE,
+		cmpl_error(MT_INTERN, errno, PINFO_ERROR, FALSE,
 		    "return from cmpl_do_child()");
 	}
 }
