@@ -36,7 +36,14 @@ void cmpl_do_makefile()
 			exit(CMPL_EXIT_FAIL);
 		} else if (WIFEXITED(wait_stat)) {
 			switch (WEXITSTATUS(wait_stat)) {
-				/* TODO */
+			case CMPL_EXIT_SUCCESS:
+				break;
+			case CMPL_EXIT_FAIL:
+				cmpl_error(MT_CHILD_EXITED, PINFO_ERROR, FALSE,
+				    "cmpl_do_makefile() failed internally");
+				break;
+			default:
+				/* TODO: deal with return codes from make */
 			}
 		} else {
 			/* NOTREACHED */
