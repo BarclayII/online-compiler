@@ -1,6 +1,10 @@
 
 static char *ldflags = NULL;
 
+void cmpl_process_csource(filename)
+{
+}
+
 void cmpl_process_file(char *filename)
 {
 	switch (getextension(filename)) {
