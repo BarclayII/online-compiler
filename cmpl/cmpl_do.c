@@ -85,6 +85,8 @@ void cmpl_traverse(void)
 
 	int entries = scandir(dir, &de, NULL, alphasort);
 	int i;
+
+	cmpl_process_init();
 	
 	for (i = 0; i < entries; ++i) {
 		switch (de[i]->d_type) {
@@ -101,6 +103,8 @@ void cmpl_traverse(void)
 		free_n(&(de[i]));
 	}
 	free_n(&de);
+
+	cmpl_process_finalize();
 }
 
 void cmpl_do_child_default(void)

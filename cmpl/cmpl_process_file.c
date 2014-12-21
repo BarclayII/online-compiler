@@ -1,9 +1,6 @@
 
-static char *cflags = NULL;
 static char *ldflags = NULL;
 
-/*
- */
 void cmpl_process_file(char *filename)
 {
 	switch (getextension(filename)) {
@@ -12,5 +9,23 @@ void cmpl_process_file(char *filename)
 		break;
 	case FILE_CHEADER:
 		break;
+	case FILE_LEX:
+		cmpl_process_lex(filename);
+		break;
+	case FILE_YACC:
+		cmpl_process_yacc(filename);
+		break;
+	default:
+		break;
 	}
+}
+
+void cmpl_process_init(void)
+{
+	ldflags = (char *)malloc(BUFSIZ);
+}
+
+void cmpl_process_finalize(void)
+{
+	free_n(&ldflags);
 }
