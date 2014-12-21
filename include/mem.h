@@ -1,6 +1,12 @@
 #ifndef _MEM_H
 #define _MEM_H
 
-void free_n(void **buf_addr);
+#include <stdlib.h>
+
+#define free_n(ptr)	\
+	do { \
+		free(ptr); \
+		ptr = NULL; \
+	} while (0)
 
 #endif

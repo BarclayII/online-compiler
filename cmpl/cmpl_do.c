@@ -99,10 +99,10 @@ void cmpl_traverse(void)
 			cmpl_process_file(de[i]->d_name);
 			break;
 		}
-		free_n(&(de[i]->d_name));
-		free_n(&(de[i]));
+		free_n((de[i]->d_name));
+		free_n((de[i]));
 	}
-	free_n(&de);
+	free_n(de);
 
 	cmpl_process_finalize();
 }

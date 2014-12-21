@@ -58,7 +58,7 @@ srvr_set_config(const char *dir, const char *file, const char *content)
 	}
 	pinfo(PINFO_DEBUG, FALSE, "fclose %s", path);
 
-	free_n(&path);
+	free_n(path);
 
 	return 0;
 }
@@ -98,7 +98,7 @@ srvr_create_file(const char *dir, const char *file)
 		}
 	}
 
-	free_n(&path);
+	free_n(path);
 
 	return fp;
 }

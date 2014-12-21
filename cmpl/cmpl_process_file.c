@@ -27,5 +27,5 @@ void cmpl_process_init(void)
 
 void cmpl_process_finalize(void)
 {
-	free_n(&ldflags);
+	free_n(ldflags);
 }

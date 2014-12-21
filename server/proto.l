@@ -46,7 +46,7 @@ NUMBER	([0-9]+)
 		srvr_yyfinish(1);
 		return NULL;
 	}
-	free_n(&tmptxt);
+	free_n(tmptxt);
 }
 ^EXEC" "{TEXT}		{
 	if (srvr_set_outexec(tmpdir,
@@ -55,7 +55,7 @@ NUMBER	([0-9]+)
 		srvr_yyfinish(1);
 		return NULL;
 	}
-	free_n(&tmptxt);
+	free_n(tmptxt);
 }
 ^CSOURCE" "{CSOURCE}		{
 	cur_file = srvr_create_file(
@@ -98,7 +98,7 @@ NUMBER	([0-9]+)
 		if (fclose(cur_file) == EOF) {
 			pinfo(PINFO_WARN, TRUE, "fclose");
 		}
-		free_n(&filename);
+		free_n(filename);
 		BEGIN INITIAL;
 	}
 }
@@ -108,12 +108,12 @@ NUMBER	([0-9]+)
 		srvr_yyfinish(1);
 		return NULL;
 	}
-	free_n(&tmptxt);
+	free_n(tmptxt);
 	if (++cur_line == lines) {
 		if (fclose(cur_file) == EOF) {
 			pinfo(PINFO_WARN, TRUE, "fclose");
 		}
-		free_n(&filename);
+		free_n(filename);
 		BEGIN INITIAL;
 	}
 }
@@ -152,8 +152,8 @@ void srvr_create_report_error(void)
 
 void srvr_yyfinish(int free_dir)
 {
-	free_n(&tmptxt);
-	free_n(&filename);
+	free_n(tmptxt);
+	free_n(filename);
 	if (free_dir)
-		free_n(&tmpdir);
+		free_n(tmpdir);
 }

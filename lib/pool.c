@@ -53,13 +53,13 @@ term_threads:
 clear_sem:
 	limit_sem_destroy(&(new->sem));
 clear_thread:
-	free_n(&(new->thread));
+	free_n((new->thread));
 clear_mutex:
 	pthread_mutex_destroy(&(new->mutex));
 clear_task:
-	free_n(&(new->task));
+	free_n((new->task));
 clear_pool:
-	free_n(&new);
+	free_n(new);
 fail:
 	return NULL;
 }
@@ -70,10 +70,10 @@ void pool_terminate(pool_t *pool)
 	for (i = 0; i < pool->max_thread; ++i)
 		pthread_cancel(pool->thread[i]);
 	limit_sem_destroy(&(pool->sem));
-	free_n(&(pool->thread));
+	free_n((pool->thread));
 	pthread_mutex_destroy(&(pool->mutex));
-	free_n(&(pool->task));
-	free_n(&pool);
+	free_n((pool->task));
+	free_n(pool);
 }
 
 static void *pool_fetch_task(void *arg)
@@ -114,8 +114,8 @@ static void *thread_entry(void *arg)
 		task = (struct _pool_task *)(cbs.ret);
 		(task->fn)(task->data);
 		if (task->copy)
-			free_n(&(task->data));
-		free_n(&task);
+			free_n((task->data));
+		free_n(task);
 	}
 
 	return NULL;

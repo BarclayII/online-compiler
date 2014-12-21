@@ -42,7 +42,7 @@ limit_sem_process_cbs(struct limit_sem_cb_struct *cbs)
 		else {
 			void *tmp = (*(cbs->func))(cbs->arg);
 			memmove(cbs->ret, tmp, cbs->ret_size);
-			free_n(&tmp);
+			free_n(tmp);
 		}
 }
 
